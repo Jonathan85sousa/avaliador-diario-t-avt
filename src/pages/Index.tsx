@@ -238,6 +238,15 @@ const overallAverage = useMemo(()=> average(evaluatedDays.map(d=> average(CATEGO
     return result;
   },[evaluatedDays]);
 
+  const sortedCats = useMemo(() =>
+    CATEGORIAS
+      .map((k) => ({ key: k as keyof Scores, label: CATEGORIA_LABEL[k], nota: categoryOverall[k] }))
+      .sort((a, b) => b.nota - a.nota)
+  , [categoryOverall]);
+
+  const strengths = useMemo(() => sortedCats.slice(0, 2).filter((c) => c.nota > 0), [sortedCats]);
+  const weaknesses = useMemo(() => sortedCats.slice(-2), [sortedCats]);
+
 const subtopicChartData = useMemo(()=> {
     return CATEGORIAS.map((k)=>{
       const arr: [number, number, number] = [0,0,0];
@@ -523,9 +532,40 @@ const subtopicChartData = useMemo(()=> {
                     <div className={`font-semibold`}>{status.label}</div>
                   </div>
                 </CardContent>
-              </Card>
+               </Card>
 
-              <div className="grid lg:grid-cols-2 gap-6">
+               <Card className="shadow-[var(--shadow-soft)]">
+                 <CardHeader>
+                   <CardTitle>Feedback</CardTitle>
+                 </CardHeader>
+                 <CardContent className="space-y-3">
+                   {status.label === "Aprovado" && (
+                     <div className="space-y-2">
+                       <p>Parabéns! O candidato foi aprovado. Pontos fortes:</p>
+                       <ul className="list-disc pl-5 text-sm">
+                         {strengths.map((s) => (
+                           <li key={s.label}>{s.label}: {s.nota.toFixed(1)}</li>
+                         ))}
+                       </ul>
+                       <p className="text-sm text-muted-foreground">Mantenha a consistência e continue avançando nesses aspectos.</p>
+                     </div>
+                   )}
+
+                   {status.label.startsWith("Aprovado com") && (
+                     <div className="space-y-2">
+                       <p>Aprovado com nota mínima. Atenção aos pontos fracos:</p>
+                       <ul className="list-disc pl-5 text-sm">
+                         {weaknesses.map((s) => (
+                           <li key={s.label}>{s.label}: {s.nota.toFixed(1)}</li>
+                         ))}
+                       </ul>
+                       <p className="text-sm text-muted-foreground">Recomenda-se plano de melhoria focado e revisão de procedimentos.</p>
+                     </div>
+                   )}
+                 </CardContent>
+               </Card>
+
+               <div className="grid lg:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Médias por dia</CardTitle>
@@ -563,8 +603,25 @@ const subtopicChartData = useMemo(()=> {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </div>
-              <Card className="mt-6">
+               </div>
+               <Card>
+                 <CardHeader>
+                   <CardTitle>Evolução diária (linha)</CardTitle>
+                 </CardHeader>
+                 <CardContent style={{height: 320}}>
+                   <ResponsiveContainer width="100%" height="100%">
+                     <LineChart data={perDayAvg}>
+                       <CartesianGrid strokeDasharray="3 3" />
+                       <XAxis dataKey="day" />
+                       <YAxis domain={[0,10]} />
+                       <Tooltip />
+                       <Legend />
+                       <Line type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" dot />
+                     </LineChart>
+                   </ResponsiveContainer>
+                 </CardContent>
+               </Card>
+               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Subtópicos por competência (média)</CardTitle>
                 </CardHeader>
