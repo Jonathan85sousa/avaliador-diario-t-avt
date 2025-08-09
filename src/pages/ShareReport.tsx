@@ -118,6 +118,14 @@ const ShareReport = () => {
     }
   }, [state]);
 
+  const colors = useMemo(() => {
+    const root = getComputedStyle(document.documentElement);
+    return {
+      primary: `hsl(${root.getPropertyValue('--primary').trim()})`,
+      background: `hsl(${root.getPropertyValue('--background').trim()})`,
+    };
+  }, [state?.tema]);
+
   const presentCount = useMemo(
     () => state?.avaliacoes.filter((d) => d.presente).length ?? 0,
     [state]
@@ -390,7 +398,7 @@ const ShareReport = () => {
                     <YAxis domain={[0, 10]} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="media" name="Média" fill="hsl(var(--primary))" />
+                    <Bar dataKey="media" name="Média" fill={colors.primary} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -414,8 +422,8 @@ const ShareReport = () => {
                     <Radar
                       name="Média"
                       dataKey="nota"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
+                      stroke={colors.primary}
+                      fill={colors.primary}
                       fillOpacity={0.3}
                     />
                     <Tooltip />
@@ -441,7 +449,7 @@ const ShareReport = () => {
                     type="monotone"
                     dataKey="media"
                     name="Média"
-                    stroke="hsl(var(--primary))"
+                    stroke={colors.primary}
                     dot
                   />
                 </LineChart>
@@ -461,9 +469,9 @@ const ShareReport = () => {
                   <YAxis domain={[0, 10]} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
-                  <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary))" fillOpacity={0.8} />
-                  <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary))" fillOpacity={0.6} />
+                  <Bar dataKey="s1" name="Subtópico 1" fill={colors.primary} />
+                  <Bar dataKey="s2" name="Subtópico 2" fill={colors.primary} fillOpacity={0.8} />
+                  <Bar dataKey="s3" name="Subtópico 3" fill={colors.primary} fillOpacity={0.6} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
