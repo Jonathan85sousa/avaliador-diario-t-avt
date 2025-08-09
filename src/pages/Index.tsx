@@ -261,9 +261,9 @@ const subtopicChartData = useMemo(()=> {
 
   const status = useMemo(()=>{
     if (state.dias > 0 && freqPercent < 70) return { label: "Reprovado por frequência", color: "destructive" as const };
-    if (overallAverage > 8) return { label: "Aprovado", color: "primary" as const };
-    if (overallAverage === 7) return { label: "Aprovado com nota mínima (requer melhoria)", color: "secondary" as const };
-    if (overallAverage <= 6) return { label: "Reprovado", color: "destructive" as const };
+    if (overallAverage >= 8) return { label: "Aprovado", color: "primary" as const };
+    if (overallAverage >= 7 && overallAverage < 8) return { label: "Aprovado com nota mínima (requer melhoria)", color: "secondary" as const };
+    if (overallAverage < 7) return { label: "Reprovado", color: "destructive" as const };
     return { label: "Em análise", color: "muted" as const };
   },[overallAverage, freqPercent, state.dias]);
 
