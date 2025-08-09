@@ -29,7 +29,7 @@ type Scores = {
 type DayEval = {
   dia: number;
   presente: boolean;
-  pontuacoes: Scores;
+  pontuacoes: ScoresDetail;
 };
 
 type TrainingState = {
@@ -71,6 +71,21 @@ const CATEGORIA_LABEL: Record<keyof Scores, string> = {
   operacional: "Operacional",
 };
 
+// Subtópicos por competência (3 por tópico)
+// As médias dos tópicos serão calculadas a partir desses subtópicos (0-10)
+type ScoresDetail = Record<keyof Scores, [number, number, number]>;
+
+const SUBTOPICOS: Record<keyof Scores, [string, string, string]> = {
+  seguranca: ["Equipamentos", "Procedimentos", "Gestão de Risco"],
+  tecnica: ["Navegação", "Prog. Técnica", "Primeiros Socorros"],
+  comunicacao: ["Clareza", "Equipe", "Feedback"],
+  aptidaoFisica: ["Resistência", "Força", "Agilidade"],
+  lideranca: ["Decisão", "Motivação", "Organização"],
+  operacional: ["Planejamento", "Rotina", "Logística"],
+};
+
+const getCategoryAverage = (p: ScoresDetail, cat: keyof Scores) => average(p[cat]);
+
 function hexToHslString(hex: string): string | undefined {
   // Remove '#'
   const c = hex.replace('#','');
@@ -109,9 +124,28 @@ function average(values: number[]): number {
 }
 
 const Index = () => {
-  const [state, setState] = useState<TrainingState>(() => {
+const [state, setState] = useState<TrainingState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved) as TrainingState;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as any;
+        const sample = parsed?.avaliacoes?.[0]?.pontuacoes?.seguranca;
+        if (typeof sample === 'number') {
+          parsed.avaliacoes = parsed.avaliacoes.map((d: any) => ({
+            ...d,
+            pontuacoes: {
+              seguranca: [d.pontuacoes.seguranca, d.pontuacoes.seguranca, d.pontuacoes.seguranca],
+              tecnica: [d.pontuacoes.tecnica, d.pontuacoes.tecnica, d.pontuacoes.tecnica],
+              comunicacao: [d.pontuacoes.comunicacao, d.pontuacoes.comunicacao, d.pontuacoes.comunicacao],
+              aptidaoFisica: [d.pontuacoes.aptidaoFisica, d.pontuacoes.aptidaoFisica, d.pontuacoes.aptidaoFisica],
+              lideranca: [d.pontuacoes.lideranca, d.pontuacoes.lideranca, d.pontuacoes.lideranca],
+              operacional: [d.pontuacoes.operacional, d.pontuacoes.operacional, d.pontuacoes.operacional],
+            }
+          }));
+        }
+        return parsed as TrainingState;
+      } catch { /* ignore and fall back to default */ }
+    }
     return {
       nomeTreinamento: "",
       local: "",
@@ -122,12 +156,12 @@ const Index = () => {
         dia: i+1,
         presente: true,
         pontuacoes: {
-          seguranca: 0,
-          tecnica: 0,
-          comunicacao: 0,
-          aptidaoFisica: 0,
-          lideranca: 0,
-          operacional: 0,
+          seguranca: [0,0,0],
+          tecnica: [0,0,0],
+          comunicacao: [0,0,0],
+          aptidaoFisica: [0,0,0],
+          lideranca: [0,0,0],
+          operacional: [0,0,0],
         }
       }))
     };
@@ -158,12 +192,12 @@ const Index = () => {
             dia: i+1,
             presente: true,
             pontuacoes: {
-              seguranca: 0,
-              tecnica: 0,
-              comunicacao: 0,
-              aptidaoFisica: 0,
-              lideranca: 0,
-              operacional: 0,
+              seguranca: [0,0,0],
+              tecnica: [0,0,0],
+              comunicacao: [0,0,0],
+              aptidaoFisica: [0,0,0],
+              lideranca: [0,0,0],
+              operacional: [0,0,0],
             }
           });
         }
@@ -182,14 +216,16 @@ const Index = () => {
   const presentCount = useMemo(()=> state.avaliacoes.filter(d=>d.presente).length, [state.avaliacoes]);
   const freqPercent = useMemo(()=> state.dias ? Math.round((presentCount/state.dias)*100) : 0, [presentCount, state.dias]);
 
-  const perDayAvg = useMemo(()=> state.avaliacoes.map(d=>({
-    day: `Dia ${d.dia}`,
-    media: average(Object.values(d.pontuacoes)),
-    ...d.pontuacoes
-  })), [state.avaliacoes]);
+const perDayAvg = useMemo(()=> state.avaliacoes.map(d=>{
+    const catMedias = CATEGORIAS.map((k)=> average(d.pontuacoes[k]));
+    return {
+      day: `Dia ${d.dia}`,
+      media: average(catMedias),
+    };
+  }), [state.avaliacoes]);
 
   const evaluatedDays = useMemo(()=> state.avaliacoes.filter(d=>d.presente), [state.avaliacoes]);
-  const overallAverage = useMemo(()=> average(evaluatedDays.map(d=> average(Object.values(d.pontuacoes)))), [evaluatedDays]);
+const overallAverage = useMemo(()=> average(evaluatedDays.map(d=> average(CATEGORIAS.map(k=> average(d.pontuacoes[k]))))), [evaluatedDays]);
 
   const categoryOverall = useMemo(()=>{
     const result: Record<keyof Scores, number> = {
@@ -197,10 +233,22 @@ const Index = () => {
     };
     if (!evaluatedDays.length) return result;
     for (const key of CATEGORIAS) {
-      result[key] = average(evaluatedDays.map(d=> d.pontuacoes[key]));
+      result[key] = average(evaluatedDays.map(d=> average(d.pontuacoes[key])));
     }
     return result;
   },[evaluatedDays]);
+
+const subtopicChartData = useMemo(()=> {
+    return CATEGORIAS.map((k)=>{
+      const arr: [number, number, number] = [0,0,0];
+      if (evaluatedDays.length) {
+        arr[0] = average(evaluatedDays.map(d => d.pontuacoes[k][0]));
+        arr[1] = average(evaluatedDays.map(d => d.pontuacoes[k][1]));
+        arr[2] = average(evaluatedDays.map(d => d.pontuacoes[k][2]));
+      }
+      return { categoria: CATEGORIA_LABEL[k], s1: arr[0], s2: arr[1], s3: arr[2] };
+    });
+  }, [evaluatedDays]);
 
   const status = useMemo(()=>{
     if (state.dias > 0 && freqPercent < 70) return { label: "Reprovado por frequência", color: "destructive" as const };
@@ -394,21 +442,41 @@ const Index = () => {
                       <Label htmlFor={`presenca-${idx}`}>Presença</Label>
                     </div>
 
-                    {CATEGORIAS.map((cat)=> (
-                      <div key={cat} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>{CATEGORIA_LABEL[cat]}</span>
-                          <span className="font-medium">{diaItem.pontuacoes[cat]}</span>
-                        </div>
-                        <Slider min={0} max={10} step={1} value={[diaItem.pontuacoes[cat]]} onValueChange={(v)=>{
-                          const val = v[0] ?? 0;
-                          setState(prev=> ({
-                            ...prev,
-                            avaliacoes: prev.avaliacoes.map((d,i)=> i===idx ? { ...d, pontuacoes: { ...d.pontuacoes, [cat]: val } } : d)
-                          }));
-                        }} />
-                      </div>
-                    ))}
+{CATEGORIAS.map((cat)=> {
+                        const subs = SUBTOPICOS[cat];
+                        const values = diaItem.pontuacoes[cat];
+                        const mediaCat = average(values).toFixed(1);
+                        return (
+                          <div key={cat} className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>{CATEGORIA_LABEL[cat]}</span>
+                              <span className="font-medium">{mediaCat}</span>
+                            </div>
+                            <div className="space-y-3">
+                              {subs.map((label, sIdx)=> (
+                                <div key={sIdx}>
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>{label}</span>
+                                    <span className="font-medium">{values[sIdx]}</span>
+                                  </div>
+                                  <Slider min={0} max={10} step={1} value={[values[sIdx]]} onValueChange={(v)=>{
+                                    const val = v[0] ?? 0;
+                                    setState(prev=> ({
+                                      ...prev,
+                                      avaliacoes: prev.avaliacoes.map((d,i)=> {
+                                        if (i!==idx) return d;
+                                        const arr = [...d.pontuacoes[cat]] as [number, number, number];
+                                        arr[sIdx] = val;
+                                        return { ...d, pontuacoes: { ...d.pontuacoes, [cat]: arr } };
+                                      })
+                                    }));
+                                  }} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                   </CardContent>
                 </Card>
               ))}
@@ -496,6 +564,25 @@ const Index = () => {
                   </CardContent>
                 </Card>
               </div>
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Subtópicos por competência (média)</CardTitle>
+                </CardHeader>
+                <CardContent style={{height: 360}}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={subtopicChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="categoria" />
+                      <YAxis domain={[0,10]} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
+                      <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary) / 0.8)" />
+                      <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary) / 0.6)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </section>
 
             <div className="mt-4 flex justify-end">
