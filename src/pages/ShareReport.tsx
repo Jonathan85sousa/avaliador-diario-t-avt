@@ -225,11 +225,12 @@ const ShareReport = () => {
         '--destructive': root.getPropertyValue('--destructive').trim(),
         '--border': root.getPropertyValue('--border').trim(),
       };
-      const dataUrl = await htmlToImage.toPng(reportRef.current, {
+       const dataUrl = await htmlToImage.toPng(reportRef.current, {
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: bg,
         style: styleVars,
+        skipFonts: true,
       });
       const a = document.createElement('a');
       const safeNome = (state?.candidato?.nome || 'candidato').replace(/\s+/g, '_');
@@ -461,8 +462,8 @@ const ShareReport = () => {
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
-                  <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary) / 0.8)" />
-                  <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary) / 0.6)" />
+                  <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary))" fillOpacity={0.8} />
+                  <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary))" fillOpacity={0.6} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

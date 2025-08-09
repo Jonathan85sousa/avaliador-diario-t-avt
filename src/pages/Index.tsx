@@ -168,7 +168,8 @@ const [state, setState] = useState<TrainingState>(() => {
   });
 
   const reportRef = useRef<HTMLDivElement>(null);
-  const skipSaveRef = useRef(false);
+const skipSaveRef = useRef(false);
+const [activeTab, setActiveTab] = useState("cadastro");
 
   useEffect(()=>{
     if (skipSaveRef.current) {
@@ -289,7 +290,7 @@ const subtopicChartData = useMemo(()=> {
         '--destructive': root.getPropertyValue('--destructive').trim(),
         '--border': root.getPropertyValue('--border').trim(),
       };
-      const dataUrl = await htmlToImage.toPng(reportRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: bg, style: styleVars });
+      const dataUrl = await htmlToImage.toPng(reportRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: bg, style: styleVars, skipFonts: true });
       const a = document.createElement('a');
       const safeNome = (state.candidato.nome || 'candidato').replace(/\s+/g,'_');
       a.download = `relatorio_${safeNome}.png`;
@@ -422,7 +423,7 @@ const subtopicChartData = useMemo(()=> {
       </header>
 
       <main className="container pb-12">
-        <Tabs defaultValue="cadastro" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
             <TabsTrigger value="avaliacao">Avaliação</TabsTrigger>
@@ -675,7 +676,7 @@ const subtopicChartData = useMemo(()=> {
                     <CardTitle>Médias por dia</CardTitle>
                   </CardHeader>
                   <CardContent style={{height: 320}}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer key={activeTab} width="100%" height="100%">
                       <BarChart data={perDayAvg}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="day" />
@@ -693,7 +694,7 @@ const subtopicChartData = useMemo(()=> {
                     <CardTitle>Média por competência</CardTitle>
                   </CardHeader>
                   <CardContent style={{height: 320}}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer key={activeTab} width="100%" height="100%">
                       <RadarChart data={CATEGORIAS.map((k)=>({
                         categoria: CATEGORIA_LABEL[k],
                         nota: categoryOverall[k]
@@ -713,7 +714,7 @@ const subtopicChartData = useMemo(()=> {
                    <CardTitle>Evolução diária (linha)</CardTitle>
                  </CardHeader>
                  <CardContent style={{height: 320}}>
-                   <ResponsiveContainer width="100%" height="100%">
+                   <ResponsiveContainer key={activeTab} width="100%" height="100%">
                      <LineChart data={perDayAvg}>
                        <CartesianGrid strokeDasharray="3 3" />
                        <XAxis dataKey="day" />
@@ -730,7 +731,7 @@ const subtopicChartData = useMemo(()=> {
                   <CardTitle>Subtópicos por competência (média)</CardTitle>
                 </CardHeader>
                 <CardContent style={{height: 360}}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer key={activeTab} width="100%" height="100%">
                     <BarChart data={subtopicChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="categoria" />
@@ -738,8 +739,8 @@ const subtopicChartData = useMemo(()=> {
                       <Tooltip />
                       <Legend />
                       <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
-                      <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary) / 0.8)" />
-                      <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary) / 0.6)" />
+                      <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary))" fillOpacity={0.8} />
+                      <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary))" fillOpacity={0.6} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
