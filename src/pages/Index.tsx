@@ -168,8 +168,13 @@ const [state, setState] = useState<TrainingState>(() => {
   });
 
   const reportRef = useRef<HTMLDivElement>(null);
+  const skipSaveRef = useRef(false);
 
   useEffect(()=>{
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   },[state]);
 
@@ -293,6 +298,31 @@ const subtopicChartData = useMemo(()=> {
       }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleReset = () => {
+    skipSaveRef.current = true;
+    localStorage.removeItem(STORAGE_KEY);
+    setState({
+      nomeTreinamento: "",
+      local: "",
+      dias: 3,
+      totalHoras: 3*8,
+      candidato: { nome: "" },
+      avaliacoes: Array.from({length:3}, (_,i)=>({
+        dia: i+1,
+        presente: true,
+        pontuacoes: {
+          seguranca: [0,0,0],
+          tecnica: [0,0,0],
+          comunicacao: [0,0,0],
+          aptidaoFisica: [0,0,0],
+          lideranca: [0,0,0],
+          operacional: [0,0,0],
+        }
+      }))
+    });
+    toast({ title: "Formulário resetado", description: "Dados limpos do navegador." });
   };
 
   const ThemePicker = () => {
@@ -430,6 +460,11 @@ const subtopicChartData = useMemo(()=> {
                 </CardContent>
               </Card>
             </section>
+            <div className="mt-4 flex justify-end">
+              <Button variant="destructive" onClick={handleReset} aria-label="Resetar formulário e limpar dados">
+                Resetar formulário e limpar dados
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="avaliacao">
