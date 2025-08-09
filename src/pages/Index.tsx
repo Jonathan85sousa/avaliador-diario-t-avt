@@ -607,6 +607,25 @@ const subtopicChartData = useMemo(()=> {
                        <p className="text-sm text-muted-foreground">Recomenda-se plano de melhoria focado e revisão de procedimentos.</p>
                      </div>
                    )}
+
+                   {(status.label === "Reprovado") && (
+                     <div className="space-y-2">
+                       <p>Reprovado por desempenho. Principais pontos a melhorar:</p>
+                       <ul className="list-disc pl-5 text-sm">
+                         {weaknesses.map((s) => (
+                           <li key={s.label}>{s.label}: {s.nota.toFixed(1)}</li>
+                         ))}
+                       </ul>
+                       <p className="text-sm text-muted-foreground">Sugere-se refazer o treinamento após um plano de desenvolvimento direcionado.</p>
+                     </div>
+                   )}
+
+                   {status.label === "Reprovado por frequência" && (
+                     <div className="space-y-2">
+                       <p>Reprovado por frequência ({freqPercent}%). A frequência mínima exigida é 70%.</p>
+                       <p className="text-sm text-muted-foreground">Agende nova participação garantindo presença suficiente para avaliação completa.</p>
+                     </div>
+                   )}
                  </CardContent>
                </Card>
 
