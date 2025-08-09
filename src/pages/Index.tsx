@@ -76,12 +76,12 @@ const CATEGORIA_LABEL: Record<keyof Scores, string> = {
 type ScoresDetail = Record<keyof Scores, [number, number, number]>;
 
 const SUBTOPICOS: Record<keyof Scores, [string, string, string]> = {
-  seguranca: ["Equipamentos", "Procedimentos", "Gestão de Risco"],
-  tecnica: ["Navegação", "Prog. Técnica", "Primeiros Socorros"],
-  comunicacao: ["Clareza", "Equipe", "Feedback"],
+  seguranca: ["Prevenção", "EPI", "Procedimentos"],
+  tecnica: ["Conhecimento", "Execução", "Eficiência"],
+  comunicacao: ["Clareza", "Assertividade", "Consistência"],
   aptidaoFisica: ["Resistência", "Força", "Agilidade"],
-  lideranca: ["Decisão", "Motivação", "Organização"],
-  operacional: ["Planejamento", "Rotina", "Logística"],
+  lideranca: ["Motivação", "Gestão de Conflitos", "Tomada de Decisão"],
+  operacional: ["Planejamento", "Cacipe", "Operação"],
 };
 
 const getCategoryAverage = (p: ScoresDetail, cat: keyof Scores) => average(p[cat]);
