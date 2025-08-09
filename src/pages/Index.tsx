@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Download, ImagePlus, Palette } from "lucide-react";
+import { Download, ImagePlus, Palette, Link2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, BarChart, Bar } from "recharts";
 import * as htmlToImage from "html-to-image";
 
@@ -275,15 +275,55 @@ const subtopicChartData = useMemo(()=> {
   const onExport = async () => {
     if (!reportRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(reportRef.current, { pixelRatio: 2, cacheBust: true });
+      const root = getComputedStyle(document.documentElement);
+      const bg = `hsl(${root.getPropertyValue('--background').trim()})`;
+      const styleVars: Record<string, string> = {
+        '--background': root.getPropertyValue('--background').trim(),
+        '--foreground': root.getPropertyValue('--foreground').trim(),
+        '--primary': root.getPropertyValue('--primary').trim(),
+        '--card': root.getPropertyValue('--card').trim(),
+        '--card-foreground': root.getPropertyValue('--card-foreground').trim(),
+        '--muted': root.getPropertyValue('--muted').trim(),
+        '--muted-foreground': root.getPropertyValue('--muted-foreground').trim(),
+        '--accent': root.getPropertyValue('--accent').trim(),
+        '--destructive': root.getPropertyValue('--destructive').trim(),
+        '--border': root.getPropertyValue('--border').trim(),
+      };
+      const dataUrl = await htmlToImage.toPng(reportRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: bg, style: styleVars });
       const a = document.createElement('a');
       const safeNome = (state.candidato.nome || 'candidato').replace(/\s+/g,'_');
       a.download = `relatorio_${safeNome}.png`;
       a.href = dataUrl;
       a.click();
-      toast({ title: "Relatório exportado", description: "O PNG foi gerado com sucesso." });
+      toast({ title: "Relatório exportado", description: "O PNG foi gerado com as cores." });
     } catch (e) {
       toast({ title: "Falha ao exportar", description: "Tente novamente.", variant: "destructive" });
+    }
+  };
+
+  const onGenerateLink = async () => {
+    try {
+      const share = {
+        nomeTreinamento: state.nomeTreinamento,
+        local: state.local,
+        dias: state.dias,
+        totalHoras: state.totalHoras,
+        candidato: state.candidato,
+        logoBase64: state.logoBase64,
+        avaliacoes: state.avaliacoes,
+        tema: state.tema,
+      };
+      const json = JSON.stringify(share);
+      const base64 = btoa(unescape(encodeURIComponent(json)));
+      const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/,'');
+      const url = `${window.location.origin}/relatorio?d=${base64url}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Relatório do treinamento', text: 'Acesse seu relatório', url }); } catch {}
+      }
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Link gerado', description: 'URL copiada para a área de transferência.' });
+    } catch (e) {
+      toast({ title: 'Falha ao gerar link', description: 'Tente novamente.', variant: 'destructive' });
     }
   };
 
@@ -706,7 +746,10 @@ const subtopicChartData = useMemo(()=> {
               </Card>
             </section>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={onGenerateLink}>
+                <Link2 className="mr-2 h-4 w-4"/> Gerar link do relatório
+              </Button>
               <Button onClick={onExport}>
                 <Download className="mr-2 h-4 w-4"/> Exportar relatório (PNG)
               </Button>
