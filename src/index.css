@@ -36,6 +36,12 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
+    /* Design enhancements */
+    --gradient-primary-start: var(--primary);
+    --gradient-primary-end: var(--accent);
+    --shadow-soft: 0 10px 30px -10px hsl(var(--primary) / 0.25);
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
@@ -83,6 +89,13 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Design enhancements */
+    --gradient-primary-start: var(--primary);
+    --gradient-primary-end: var(--accent);
+    --shadow-soft: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +113,6 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-brand;
   }
 }
