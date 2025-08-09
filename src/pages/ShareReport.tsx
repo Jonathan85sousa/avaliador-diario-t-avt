@@ -233,13 +233,27 @@ const ShareReport = () => {
         '--destructive': root.getPropertyValue('--destructive').trim(),
         '--border': root.getPropertyValue('--border').trim(),
       };
-       const dataUrl = await htmlToImage.toPng(reportRef.current, {
+      // Cria um wrapper temporário com as variáveis de tema aplicadas
+      const wrapper = document.createElement('div');
+      Object.entries(styleVars).forEach(([k, v]) => wrapper.style.setProperty(k, v));
+      wrapper.style.position = 'fixed';
+      wrapper.style.left = '-10000px';
+      wrapper.style.top = '0';
+      wrapper.style.backgroundColor = bg;
+      const clone = reportRef.current.cloneNode(true) as HTMLElement;
+      wrapper.appendChild(clone);
+      // manter dimensões
+      wrapper.style.width = `${reportRef.current.offsetWidth}px`;
+      document.body.appendChild(wrapper);
+
+      const dataUrl = await htmlToImage.toPng(wrapper, {
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: bg,
-        style: styleVars,
-        skipFonts: true,
+        skipFonts: false,
       });
+
+      wrapper.remove();
       const a = document.createElement('a');
       const safeNome = (state?.candidato?.nome || 'candidato').replace(/\s+/g, '_');
       a.download = `relatorio_${safeNome}.png`;
