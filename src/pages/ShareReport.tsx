@@ -55,7 +55,7 @@ function decodePayload(packed: string) {
   return JSON.parse(json);
 }
 
-type DayEval = { dia: number; presente: boolean; pontuacoes: ScoresDetail };
+type DayEval = { dia: number; presente: boolean; pontuacoes: ScoresDetail; data?: string };
 
 type TrainingState = {
   nomeTreinamento: string;
@@ -186,7 +186,7 @@ const ShareReport = () => {
     () =>
       (state?.avaliacoes ?? []).map((d) => {
         const catMedias = CATEGORIAS.map((k) => average(d.pontuacoes[k]));
-        return { day: `Dia ${d.dia}`, media: average(catMedias) };
+        return { day: d.data ?? `Dia ${d.dia}`, media: average(catMedias) };
       }),
     [state]
   );
@@ -292,6 +292,14 @@ const ShareReport = () => {
               <div>
                 <div className="text-sm text-muted-foreground">Local</div>
                 <div className="font-semibold">{state.local || '—'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Período</div>
+                <div className="font-semibold">
+                  {state.avaliacoes?.[0]?.data && state.avaliacoes?.[state.avaliacoes.length-1]?.data
+                    ? `${state.avaliacoes[0]?.data} – ${state.avaliacoes[state.avaliacoes.length-1]?.data}`
+                    : '—'}
+                </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Candidato</div>

@@ -15,6 +15,10 @@ import { toast } from "@/hooks/use-toast";
 import { Download, ImagePlus, Palette, Link2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, BarChart, Bar } from "recharts";
 import * as htmlToImage from "html-to-image";
+import { format, addDays } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 // Tipos
 type Scores = {
@@ -30,6 +34,7 @@ type DayEval = {
   dia: number;
   presente: boolean;
   pontuacoes: ScoresDetail;
+  data?: string; // dd/MM
 };
 
 type TrainingState = {
@@ -37,6 +42,8 @@ type TrainingState = {
   local: string;
   dias: number;
   totalHoras: number;
+  startDate?: string; // ISO yyyy-MM-dd
+  endDate?: string;   // ISO yyyy-MM-dd
   candidato: {
     nome: string;
     idade?: number;
@@ -123,6 +130,8 @@ function average(values: number[]): number {
   return Number((values.reduce((a,b)=>a+b,0)/values.length).toFixed(2));
 }
 
+function toISODate(d: Date): string { return d.toISOString().slice(0,10); }
+
 const Index = () => {
 const [state, setState] = useState<TrainingState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -193,28 +202,44 @@ const [activeTab, setActiveTab] = useState("cadastro");
     setState(prev => {
       const current = [...prev.avaliacoes];
       if (dias > current.length) {
-        for (let i=current.length; i<dias; i++) {
+        for (let i = current.length; i < dias; i++) {
           current.push({
-            dia: i+1,
+            dia: i + 1,
             presente: true,
             pontuacoes: {
-              seguranca: [0,0,0],
-              tecnica: [0,0,0],
-              comunicacao: [0,0,0],
-              aptidaoFisica: [0,0,0],
-              lideranca: [0,0,0],
-              operacional: [0,0,0],
-            }
+              seguranca: [0, 0, 0],
+              tecnica: [0, 0, 0],
+              comunicacao: [0, 0, 0],
+              aptidaoFisica: [0, 0, 0],
+              lideranca: [0, 0, 0],
+              operacional: [0, 0, 0],
+            },
           });
         }
       } else if (dias < current.length) {
         current.length = dias;
       }
+      const updated = current.map((d, i) => ({ ...d, dia: i + 1 }));
+
+      let endDate = prev.endDate;
+      if (prev.startDate) {
+        for (let i = 0; i < updated.length; i++) {
+          const date = addDays(new Date(prev.startDate), i);
+          updated[i] = { ...updated[i], data: format(date, "dd/MM") };
+        }
+        endDate = toISODate(addDays(new Date(prev.startDate), dias - 1));
+      } else {
+        for (let i = 0; i < updated.length; i++) {
+          updated[i] = { ...updated[i], data: undefined };
+        }
+      }
+
       return {
         ...prev,
         dias,
-        totalHoras: dias*8,
-        avaliacoes: current.map((d,i)=>({...d, dia: i+1}))
+        totalHoras: dias * 8,
+        avaliacoes: updated,
+        endDate,
       };
     });
   };
@@ -225,7 +250,7 @@ const [activeTab, setActiveTab] = useState("cadastro");
 const perDayAvg = useMemo(()=> state.avaliacoes.map(d=>{
     const catMedias = CATEGORIAS.map((k)=> average(d.pontuacoes[k]));
     return {
-      day: `Dia ${d.dia}`,
+      day: d.data ?? `Dia ${d.dia}`,
       media: average(catMedias),
     };
   }), [state.avaliacoes]);
@@ -309,6 +334,8 @@ const subtopicChartData = useMemo(()=> {
         local: state.local,
         dias: state.dias,
         totalHoras: state.totalHoras,
+        startDate: state.startDate,
+        endDate: state.endDate,
         candidato: state.candidato,
         logoBase64: state.logoBase64,
         avaliacoes: state.avaliacoes,
@@ -455,6 +482,66 @@ const subtopicChartData = useMemo(()=> {
                       <Input readOnly value={`${state.totalHoras} h`} />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Início</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start font-normal", !state.startDate && "text-muted-foreground")}
+                          >
+                            {state.startDate ? format(new Date(state.startDate), "dd/MM") : <span>Selecione</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={state.startDate ? new Date(state.startDate) : undefined}
+                            onSelect={(d) => {
+                              setState(prev => {
+                                const start = d ? toISODate(d) : undefined;
+                                let aval = prev.avaliacoes.map((day, i) => {
+                                  if (!start) return { ...day, data: undefined };
+                                  const date = addDays(new Date(start), i);
+                                  return { ...day, data: format(date, "dd/MM") };
+                                });
+                                const end = start ? toISODate(addDays(new Date(start), (prev.dias ?? aval.length) - 1)) : prev.endDate;
+                                return { ...prev, startDate: start, endDate: end, avaliacoes: aval };
+                              });
+                            }}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div>
+                      <Label>Fim</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start font-normal", !state.endDate && "text-muted-foreground")}
+                          >
+                            {state.endDate ? format(new Date(state.endDate), "dd/MM") : <span>Selecione</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={state.endDate ? new Date(state.endDate) : undefined}
+                            onSelect={(d) => {
+                              setState(prev => ({ ...prev, endDate: d ? toISODate(d) : undefined }));
+                            }}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -513,7 +600,7 @@ const subtopicChartData = useMemo(()=> {
               {state.avaliacoes.map((diaItem, idx)=> (
                 <Card key={diaItem.dia} className="transition-transform duration-200 hover:scale-[1.01] hover:shadow-md">
                   <CardHeader>
-                    <CardTitle>{`Dia ${diaItem.dia}`}</CardTitle>
+                    <CardTitle>{`Dia ${diaItem.dia}${diaItem.data ? ` - ${diaItem.data}` : ""}`}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-2">
@@ -582,6 +669,14 @@ const subtopicChartData = useMemo(()=> {
                   <div>
                     <div className="text-sm text-muted-foreground">Local</div>
                     <div className="font-semibold">{state.local || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Período</div>
+                    <div className="font-semibold">
+                      {state.avaliacoes[0]?.data && state.avaliacoes[state.avaliacoes.length-1]?.data
+                        ? `${state.avaliacoes[0]?.data} – ${state.avaliacoes[state.avaliacoes.length-1]?.data}`
+                        : '—'}
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Candidato</div>
