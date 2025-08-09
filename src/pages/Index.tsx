@@ -511,6 +511,16 @@ const subtopicChartData = useMemo(()=> {
                     <div className="text-sm text-muted-foreground">Candidato</div>
                     <div className="font-semibold">{state.candidato.nome || '—'}{state.candidato.idade ? `, ${state.candidato.idade} anos` : ''}</div>
                   </div>
+                  {state.candidato.fotoBase64 && (
+                    <div className="flex items-start gap-3 md:col-start-3 md:row-start-1 md:row-span-2 justify-self-end">
+                      <img
+                        src={state.candidato.fotoBase64}
+                        alt={`Foto do candidato ${state.candidato.nome || ''}`}
+                        loading="lazy"
+                        className="h-20 w-20 rounded-full object-cover ring-1 ring-border shadow"
+                      />
+                    </div>
+                  )}
                   <div>
                     <div className="text-sm text-muted-foreground">Dias</div>
                     <div className="font-semibold">{state.dias}</div>
