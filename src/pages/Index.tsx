@@ -398,13 +398,24 @@ const subtopicChartData = useMemo(()=> {
     });
   }, [evaluatedDays]);
 
+  const allDaysCompleted = useMemo(() => {
+    if (!state.dias) return false;
+    if (!state.avaliacoes || state.avaliacoes.length < state.dias) return false;
+    return state.avaliacoes.every((d) => {
+      if (d.presente === false) return true; // ausência conta como dia concluído
+      // dia presente é considerado concluído se houver alguma pontuação > 0
+      return CATEGORIAS.some((k) => d.pontuacoes[k].some((v) => v > 0));
+    });
+  }, [state.avaliacoes, state.dias]);
+
   const status = useMemo(()=>{
+    if (!allDaysCompleted) return { label: "Em avaliação", color: "muted" as const };
     if (state.dias > 0 && freqPercent < 70) return { label: "Reprovado por frequência", color: "destructive" as const };
     if (overallAverage >= 8) return { label: "Aprovado", color: "primary" as const };
     if (overallAverage >= 7 && overallAverage < 8) return { label: "Aprovado com nota mínima (requer melhoria)", color: "secondary" as const };
     if (overallAverage < 7) return { label: "Reprovado", color: "destructive" as const };
-    return { label: "Em análise", color: "muted" as const };
-  },[overallAverage, freqPercent, state.dias]);
+    return { label: "Em avaliação", color: "muted" as const };
+  },[overallAverage, freqPercent, state.dias, allDaysCompleted]);
 
   // Resolve primary color to a concrete value for SVG exports
   const colors = useMemo(() => {

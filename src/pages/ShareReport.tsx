@@ -212,7 +212,19 @@ const ShareReport = () => {
     });
   }, [evaluatedDays]);
 
+  const allDaysCompleted = useMemo(() => {
+    const dias = state?.dias ?? 0;
+    const avals = state?.avaliacoes ?? [];
+    if (!dias || avals.length < dias) return false;
+    return avals.every((d) => {
+      if (d.presente === false) return true; // ausência conta como concluído
+      return CATEGORIAS.some((k) => d.pontuacoes[k].some((v) => v > 0));
+    });
+  }, [state?.avaliacoes, state?.dias]);
+
   const status = useMemo(() => {
+    if (!allDaysCompleted)
+      return { label: 'Em avaliação', color: 'muted' as const };
     if ((state?.dias ?? 0) > 0 && freqPercent < 70)
       return { label: 'Reprovado por frequência', color: 'destructive' as const };
     if (overallAverage >= 8) return { label: 'Aprovado', color: 'primary' as const };
@@ -222,8 +234,8 @@ const ShareReport = () => {
         color: 'secondary' as const,
       };
     if (overallAverage < 7) return { label: 'Reprovado', color: 'destructive' as const };
-    return { label: 'Em análise', color: 'muted' as const };
-  }, [overallAverage, freqPercent, state?.dias]);
+    return { label: 'Em avaliação', color: 'muted' as const };
+  }, [overallAverage, freqPercent, state?.dias, allDaysCompleted]);
 
   const onExport = async () => {
     if (!reportRef.current) return;
