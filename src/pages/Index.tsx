@@ -59,6 +59,17 @@ type TrainingState = {
 };
 
 const STORAGE_KEY = "adventure-training-eval-v1";
+const TRAINING_KEY = "adventure-training-settings-v1";
+const PARTICIPANTS_KEY = "adventure-training-participants-v1";
+const CURRENT_PARTICIPANT_KEY = "adventure-training-current-v1";
+const EVAL_KEY_PREFIX = "adventure-training-eval-v1:p:";
+
+type Participant = {
+  id: string;
+  nome: string;
+  idade?: number;
+  fotoBase64?: string;
+};
 
 const CATEGORIAS: Array<keyof Scores> = [
   "seguranca",
@@ -132,6 +143,32 @@ function average(values: number[]): number {
 
 function toISODate(d: Date): string { return format(d, 'yyyy-MM-dd'); }
 function parseISODateLocal(s: string): Date { const [y, m, day] = s.split('-').map(Number); return new Date((y || 1970), (m || 1) - 1, (day || 1)); }
+function adjustAvaliacaoLength(existing: DayEval[] | undefined, dias: number, startDate?: string): DayEval[] {
+  const base = existing && Array.isArray(existing) ? existing.slice(0, dias) : [] as DayEval[];
+  const result: DayEval[] = [];
+  for (let i = 0; i < dias; i++) {
+    const prev = base[i];
+    const date = startDate ? format(addDays(parseISODateLocal(startDate), i), "dd/MM") : undefined;
+    if (prev) {
+      result.push({ ...prev, dia: i + 1, data: date });
+    } else {
+      result.push({
+        dia: i + 1,
+        presente: true,
+        pontuacoes: {
+          seguranca: [0, 0, 0],
+          tecnica: [0, 0, 0],
+          comunicacao: [0, 0, 0],
+          aptidaoFisica: [0, 0, 0],
+          lideranca: [0, 0, 0],
+          operacional: [0, 0, 0],
+        },
+        data: date,
+      });
+    }
+  }
+  return result;
+}
 
 const Index = () => {
 const [state, setState] = useState<TrainingState>(() => {
@@ -180,14 +217,84 @@ const [state, setState] = useState<TrainingState>(() => {
   const reportRef = useRef<HTMLDivElement>(null);
 const skipSaveRef = useRef(false);
 const [activeTab, setActiveTab] = useState("cadastro");
+const [participants, setParticipants] = useState<Participant[]>([]);
+const [currentParticipantId, setCurrentParticipantId] = useState<string | undefined>(undefined);
+const [newPartName, setNewPartName] = useState<string>("");
+const [newPartAge, setNewPartAge] = useState<string>("");
+
+  useEffect(()=>{
+    // Carregar configurações e participantes ao montar
+    try {
+      const tStr = localStorage.getItem(TRAINING_KEY);
+      if (tStr) {
+        const t = JSON.parse(tStr);
+        skipSaveRef.current = true;
+        setState(prev => ({
+          ...prev,
+          nomeTreinamento: t.nomeTreinamento ?? prev.nomeTreinamento,
+          local: t.local ?? prev.local,
+          dias: t.dias ?? prev.dias,
+          totalHoras: t.totalHoras ?? prev.totalHoras,
+          startDate: t.startDate ?? prev.startDate,
+          endDate: t.endDate ?? prev.endDate,
+          tema: t.tema ?? prev.tema,
+          logoBase64: t.logoBase64 ?? prev.logoBase64,
+        }));
+      }
+    } catch {}
+    try {
+      const pStr = localStorage.getItem(PARTICIPANTS_KEY);
+      if (pStr) setParticipants(JSON.parse(pStr) as Participant[]);
+    } catch {}
+    const cur = localStorage.getItem(CURRENT_PARTICIPANT_KEY) || undefined;
+    setCurrentParticipantId(cur || undefined);
+  },[]);
+
+  useEffect(()=>{
+    // Ao trocar participante ou mudar dias/início, carregar/ajustar avaliações
+    if (!currentParticipantId) return;
+    const p = participants.find(x=>x.id===currentParticipantId);
+    if (!p) return;
+    let avaliacoes: DayEval[] | undefined;
+    const raw = localStorage.getItem(EVAL_KEY_PREFIX + currentParticipantId);
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw) as { avaliacoes?: DayEval[] };
+        avaliacoes = saved.avaliacoes;
+      } catch {}
+    }
+    const adjusted = adjustAvaliacaoLength(avaliacoes, state.dias, state.startDate);
+    skipSaveRef.current = true;
+    setState(prev => ({ ...prev, candidato: { nome: p.nome, idade: p.idade, fotoBase64: p.fotoBase64 }, avaliacoes: adjusted }));
+  },[currentParticipantId, participants, state.dias, state.startDate]);
 
   useEffect(()=>{
     if (skipSaveRef.current) {
       skipSaveRef.current = false;
       return;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  },[state]);
+    // Salvar apenas configurações do treinamento
+    const { nomeTreinamento, local, dias, totalHoras, startDate, endDate, tema, logoBase64 } = state;
+    const training = { nomeTreinamento, local, dias, totalHoras, startDate, endDate, tema, logoBase64 };
+    localStorage.setItem(TRAINING_KEY, JSON.stringify(training));
+  },[state.nomeTreinamento, state.local, state.dias, state.totalHoras, state.startDate, state.endDate, state.tema, state.logoBase64]);
+
+  useEffect(()=>{
+    // Persistir lista de participantes
+    localStorage.setItem(PARTICIPANTS_KEY, JSON.stringify(participants));
+  },[participants]);
+
+  useEffect(()=>{
+    // Persistir participante atual
+    if (currentParticipantId) localStorage.setItem(CURRENT_PARTICIPANT_KEY, currentParticipantId);
+  },[currentParticipantId]);
+
+  useEffect(()=>{
+    // Salvar avaliações do participante atual
+    if (!currentParticipantId) return;
+    const payload = { avaliacoes: state.avaliacoes };
+    localStorage.setItem(EVAL_KEY_PREFIX + currentParticipantId, JSON.stringify(payload));
+  },[state.avaliacoes, currentParticipantId]);
 
   // Aplicar tema salvo
   useEffect(()=>{
@@ -360,11 +467,20 @@ const subtopicChartData = useMemo(()=> {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      setState(prev=> ({
-        ...prev,
-        candidato: target==='foto' ? { ...prev.candidato, fotoBase64: base64 } : prev.candidato,
-        logoBase64: target==='logo' ? base64 : prev.logoBase64
-      }));
+      if (target === 'foto') {
+        if (currentParticipantId) {
+          setParticipants(prev => prev.map(p => p.id === currentParticipantId ? { ...p, fotoBase64: base64 } : p));
+        }
+        setState(prev=> ({
+          ...prev,
+          candidato: { ...prev.candidato, fotoBase64: base64 },
+        }));
+      } else {
+        setState(prev=> ({
+          ...prev,
+          logoBase64: base64,
+        }));
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -548,16 +664,74 @@ const subtopicChartData = useMemo(()=> {
 
               <Card className="shadow-[var(--shadow-soft)]">
                 <CardHeader>
+                  <CardTitle>Participantes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <Label htmlFor="novoParticipante">Nome</Label>
+                      <Input id="novoParticipante" placeholder="Nome do participante" value={newPartName} onChange={e=>setNewPartName(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label htmlFor="idadeParticipante">Idade</Label>
+                      <Input id="idadeParticipante" type="number" min={10} placeholder="Opcional" value={newPartAge} onChange={e=>setNewPartAge(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="button" onClick={() => {
+                      const nome = newPartName.trim();
+                      if (!nome) { toast({ title: "Informe o nome", variant: "destructive" }); return; }
+                      const id = (crypto as any)?.randomUUID ? (crypto as any).randomUUID() : String(Date.now());
+                      const idade = newPartAge ? Number(newPartAge) : undefined;
+                      const novo: Participant = { id, nome, idade };
+                      setParticipants(prev => [...prev, novo]);
+                      setCurrentParticipantId(id);
+                      setNewPartName("");
+                      setNewPartAge("");
+                    }}>Adicionar participante</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {participants.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum participante cadastrado.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {participants.map((p) => (
+                          <li key={p.id} className="flex items-center justify-between gap-2">
+                            <div className="text-sm">
+                              <div className="font-medium">{p.nome}</div>
+                              {p.idade ? <div className="text-muted-foreground">Idade: {p.idade}</div> : null}
+                            </div>
+                            <Button type="button" variant={currentParticipantId === p.id ? "secondary" : "outline"} onClick={() => setCurrentParticipantId(p.id)}>
+                              {currentParticipantId === p.id ? "Selecionado" : "Selecionar"}
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-[var(--shadow-soft)]">
+                <CardHeader>
                   <CardTitle>Dados do Candidato</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="nomeCand">Nome do candidato</Label>
-                    <Input id="nomeCand" value={state.candidato.nome} onChange={e=>setState(prev=>({...prev, candidato: {...prev.candidato, nome: e.target.value}}))} placeholder="Nome completo" />
+                    <Input id="nomeCand" value={state.candidato.nome} onChange={e=>{
+                      const v = e.target.value;
+                      setState(prev=>({...prev, candidato: {...prev.candidato, nome: v}}));
+                      if (currentParticipantId) setParticipants(prev=>prev.map(p=>p.id===currentParticipantId?{...p, nome: v}:p));
+                    }} placeholder="Nome completo" />
                   </div>
                   <div>
                     <Label htmlFor="idade">Idade</Label>
-                    <Input id="idade" type="number" min={10} value={state.candidato.idade ?? ''} onChange={e=>setState(prev=>({...prev, candidato: {...prev.candidato, idade: Number(e.target.value)}}))} placeholder="Opcional" />
+                    <Input id="idade" type="number" min={10} value={state.candidato.idade ?? ''} onChange={e=>{
+                      const num = Number(e.target.value);
+                      setState(prev=>({...prev, candidato: {...prev.candidato, idade: num}}));
+                      if (currentParticipantId) setParticipants(prev=>prev.map(p=>p.id===currentParticipantId?{...p, idade: num}:p));
+                    }} placeholder="Opcional" />
                   </div>
                   <div className="flex items-center gap-3">
                     <Button type="button" variant="secondary" onClick={()=>document.getElementById('fotoCand')?.click()}>
