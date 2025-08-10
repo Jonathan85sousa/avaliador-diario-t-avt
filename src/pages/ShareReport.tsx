@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from '@/hooks/use-toast';
 import { Download } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
@@ -390,24 +391,40 @@ const ShareReport = () => {
             <CardContent className="space-y-4">
               <div>
                 <div className="font-medium">Destaques por dia</div>
-                <ul className="space-y-2 text-sm">
-                  {dailyExtremes.length === 0 && (
-                    <li className="text-muted-foreground">Sem avaliações diárias.</li>
-                  )}
-                  {dailyExtremes.map((d) => (
-                    <li key={d.day}>
-                      <div className="text-muted-foreground">{d.day}</div>
-                      {d.high && d.low ? (
-                        <div className="flex flex-wrap gap-6">
-                          <span>Alta: {d.high.label} ({d.high.nota.toFixed(1)})</span>
-                          <span>Baixa: {d.low.label} ({d.low.nota.toFixed(1)})</span>
-                        </div>
+                <div className="mt-2 rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Dia</TableHead>
+                        <TableHead>Ponto com maior média</TableHead>
+                        <TableHead>Ponto com menor média</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dailyExtremes.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-muted-foreground">Sem avaliações diárias.</TableCell>
+                        </TableRow>
                       ) : (
-                        <div className="text-muted-foreground">Sem avaliação</div>
+                        dailyExtremes.map((d) => (
+                          <TableRow key={d.day}>
+                            <TableCell className="whitespace-nowrap">{d.day}</TableCell>
+                            {d.high && d.low ? (
+                              <>
+                                <TableCell>{d.high.label} ({d.high.nota.toFixed(1)})</TableCell>
+                                <TableCell>{d.low.label} ({d.low.nota.toFixed(1)})</TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell colSpan={2} className="text-muted-foreground">Sem avaliação</TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        ))
                       )}
-                    </li>
-                  ))}
-                </ul>
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
               <div>
