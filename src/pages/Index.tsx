@@ -130,7 +130,8 @@ function average(values: number[]): number {
   return Number((values.reduce((a,b)=>a+b,0)/values.length).toFixed(2));
 }
 
-function toISODate(d: Date): string { return d.toISOString().slice(0,10); }
+function toISODate(d: Date): string { return format(d, 'yyyy-MM-dd'); }
+function parseISODateLocal(s: string): Date { const [y, m, day] = s.split('-').map(Number); return new Date((y || 1970), (m || 1) - 1, (day || 1)); }
 
 const Index = () => {
 const [state, setState] = useState<TrainingState>(() => {
@@ -224,10 +225,10 @@ const [activeTab, setActiveTab] = useState("cadastro");
       let endDate = prev.endDate;
       if (prev.startDate) {
         for (let i = 0; i < updated.length; i++) {
-          const date = addDays(new Date(prev.startDate), i);
+          const date = addDays(parseISODateLocal(prev.startDate), i);
           updated[i] = { ...updated[i], data: format(date, "dd/MM") };
         }
-        endDate = toISODate(addDays(new Date(prev.startDate), dias - 1));
+        endDate = toISODate(addDays(parseISODateLocal(prev.startDate), dias - 1));
       } else {
         for (let i = 0; i < updated.length; i++) {
           updated[i] = { ...updated[i], data: undefined };
@@ -492,22 +493,22 @@ const subtopicChartData = useMemo(()=> {
                             variant="outline"
                             className={cn("w-full justify-start font-normal", !state.startDate && "text-muted-foreground")}
                           >
-                            {state.startDate ? format(new Date(state.startDate), "dd/MM") : <span>Selecione</span>}
+                            {state.startDate ? format(parseISODateLocal(state.startDate), "dd/MM") : <span>Selecione</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={state.startDate ? new Date(state.startDate) : undefined}
+                            selected={state.startDate ? parseISODateLocal(state.startDate) : undefined}
                             onSelect={(d) => {
                               setState(prev => {
                                 const start = d ? toISODate(d) : undefined;
                                 let aval = prev.avaliacoes.map((day, i) => {
                                   if (!start) return { ...day, data: undefined };
-                                  const date = addDays(new Date(start), i);
+                                  const date = addDays(parseISODateLocal(start), i);
                                   return { ...day, data: format(date, "dd/MM") };
                                 });
-                                const end = start ? toISODate(addDays(new Date(start), (prev.dias ?? aval.length) - 1)) : prev.endDate;
+                                const end = start ? toISODate(addDays(parseISODateLocal(start), (prev.dias ?? aval.length) - 1)) : prev.endDate;
                                 return { ...prev, startDate: start, endDate: end, avaliacoes: aval };
                               });
                             }}
@@ -525,13 +526,13 @@ const subtopicChartData = useMemo(()=> {
                             variant="outline"
                             className={cn("w-full justify-start font-normal", !state.endDate && "text-muted-foreground")}
                           >
-                            {state.endDate ? format(new Date(state.endDate), "dd/MM") : <span>Selecione</span>}
+                            {state.endDate ? format(parseISODateLocal(state.endDate), "dd/MM") : <span>Selecione</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={state.endDate ? new Date(state.endDate) : undefined}
+                            selected={state.endDate ? parseISODateLocal(state.endDate) : undefined}
                             onSelect={(d) => {
                               setState(prev => ({ ...prev, endDate: d ? toISODate(d) : undefined }));
                             }}
