@@ -394,7 +394,7 @@ const subtopicChartData = useMemo(()=> {
         arr[1] = average(evaluatedDays.map(d => d.pontuacoes[k][1]));
         arr[2] = average(evaluatedDays.map(d => d.pontuacoes[k][2]));
       }
-      return { categoria: CATEGORIA_LABEL[k], s1: arr[0], s2: arr[1], s3: arr[2] };
+      return { catKey: k, categoria: CATEGORIA_LABEL[k], s1: arr[0], s2: arr[1], s3: arr[2] };
     });
   }, [evaluatedDays]);
 
@@ -1006,7 +1006,17 @@ const subtopicChartData = useMemo(()=> {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="categoria" />
                       <YAxis domain={[0,10]} />
-                      <Tooltip />
+                      <Tooltip formatter={(value: any, _name: any, props: any) => {
+                        try {
+                          const dataKey = props.dataKey as 's1' | 's2' | 's3';
+                          const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
+                          const catKey = props?.payload?.catKey as keyof Scores;
+                          const label = SUBTOPICOS[catKey]?.[idx] ?? _name;
+                          return [value as number, label];
+                        } catch {
+                          return [value as number, _name];
+                        }
+                      }} />
                       <Legend />
                       <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
                       <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary))" fillOpacity={0.8} />

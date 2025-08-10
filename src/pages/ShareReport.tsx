@@ -38,6 +38,15 @@ const CATEGORIA_LABEL: Record<keyof Scores, string> = {
   operacional: 'Operacional',
 };
 
+const SUBTOPICOS: Record<keyof Scores, [string, string, string]> = {
+  seguranca: ['Prevenção', 'EPI', 'Procedimentos'],
+  tecnica: ['Conhecimento', 'Execução', 'Eficiência'],
+  comunicacao: ['Clareza', 'Assertividade', 'Consistência'],
+  aptidaoFisica: ['Resistência', 'Força', 'Agilidade'],
+  lideranca: ['Motivação', 'Gestão de Conflitos', 'Tomada de Decisão'],
+  operacional: ['Planejamento', 'Cacipe', 'Operação'],
+};
+
 function average(values: number[]): number {
   if (!values.length) return 0;
   return Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2));
@@ -199,7 +208,7 @@ const ShareReport = () => {
         arr[1] = average(evaluatedDays.map((d) => d.pontuacoes[k][1]));
         arr[2] = average(evaluatedDays.map((d) => d.pontuacoes[k][2]));
       }
-      return { categoria: CATEGORIA_LABEL[k], s1: arr[0], s2: arr[1], s3: arr[2] };
+      return { catKey: k, categoria: CATEGORIA_LABEL[k], s1: arr[0], s2: arr[1], s3: arr[2] };
     });
   }, [evaluatedDays]);
 
@@ -489,7 +498,17 @@ const ShareReport = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="categoria" />
                   <YAxis domain={[0, 10]} />
-                  <Tooltip />
+                  <Tooltip formatter={(value: any, _name: any, props: any) => {
+                    try {
+                      const dataKey = props.dataKey as 's1' | 's2' | 's3';
+                      const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
+                      const catKey = props?.payload?.catKey as keyof Scores;
+                      const label = SUBTOPICOS[catKey]?.[idx] ?? _name;
+                      return [value as number, label];
+                    } catch {
+                      return [value as number, _name];
+                    }
+                  }} />
                   <Legend />
                   <Bar dataKey="s1" name="Subtópico 1" fill={colors.primary} />
                   <Bar dataKey="s2" name="Subtópico 2" fill={colors.primary} fillOpacity={0.8} />
