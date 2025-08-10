@@ -406,6 +406,12 @@ const subtopicChartData = useMemo(()=> {
     return { label: "Em análise", color: "muted" as const };
   },[overallAverage, freqPercent, state.dias]);
 
+  // Resolve primary color to a concrete value for SVG exports
+  const colors = useMemo(() => {
+    const root = getComputedStyle(document.documentElement);
+    return { primary: `hsl(${root.getPropertyValue('--primary').trim()})` };
+  }, [state.tema]);
+
   const onExport = async () => {
     if (!reportRef.current) return;
     try {
@@ -991,7 +997,7 @@ const subtopicChartData = useMemo(()=> {
                        <YAxis domain={[0,10]} />
                        <Tooltip />
                        <Legend />
-                       <Line type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" dot />
+                       <Line type="monotone" dataKey="media" name="Média" stroke={colors.primary} dot />
                      </LineChart>
                    </ResponsiveContainer>
                  </CardContent>
