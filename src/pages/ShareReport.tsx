@@ -191,6 +191,27 @@ const ShareReport = () => {
   );
   const weaknesses = useMemo(() => sortedCats.slice(-2), [sortedCats]);
 
+  // Destaques por dia
+  const dailyExtremes = useMemo(() => {
+    return evaluatedDays.map((d) => {
+      const scores = CATEGORIAS.map((k) => ({
+        key: k,
+        label: CATEGORIA_LABEL[k],
+        nota: average(d.pontuacoes[k]),
+      }));
+      const hasData = scores.some((s) => s.nota > 0);
+      if (!hasData) {
+        return { day: d.data ?? `Dia ${d.dia}`, high: undefined as any, low: undefined as any };
+      }
+      const high = scores.reduce((m, s) => (s.nota > m.nota ? s : m), scores[0]);
+      const low = scores.reduce((m, s) => (s.nota < m.nota ? s : m), scores[0]);
+      return { day: d.data ?? `Dia ${d.dia}`, high, low };
+    });
+  }, [evaluatedDays]);
+
+  const strengthsAll = useMemo(() => sortedCats.filter((c) => c.nota >= 8), [sortedCats]);
+  const improvementsAll = useMemo(() => sortedCats.filter((c) => c.nota < 7), [sortedCats]);
+
   const perDayAvg = useMemo(
     () =>
       (state?.avaliacoes ?? []).map((d) => {
@@ -366,65 +387,58 @@ const ShareReport = () => {
             <CardHeader>
               <CardTitle>Feedback</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {status.label === 'Aprovado' && (
-                <div className="space-y-2">
-                  <p>Parabéns! O candidato foi aprovado. Pontos fortes:</p>
-                  <ul className="list-disc pl-5 text-sm">
-                    {strengths.map((s) => (
-                      <li key={s.label}>
-                        {s.label}: {s.nota.toFixed(1)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-muted-foreground">
-                    Mantenha a consistência e continue avançando nesses aspectos.
-                  </p>
-                </div>
-              )}
+            <CardContent className="space-y-4">
+              <div>
+                <div className="font-medium">Destaques por dia</div>
+                <ul className="space-y-2 text-sm">
+                  {dailyExtremes.length === 0 && (
+                    <li className="text-muted-foreground">Sem avaliações diárias.</li>
+                  )}
+                  {dailyExtremes.map((d) => (
+                    <li key={d.day}>
+                      <div className="text-muted-foreground">{d.day}</div>
+                      {d.high && d.low ? (
+                        <div className="flex flex-wrap gap-6">
+                          <span>Alta: {d.high.label} ({d.high.nota.toFixed(1)})</span>
+                          <span>Baixa: {d.low.label} ({d.low.nota.toFixed(1)})</span>
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">Sem avaliação</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-              {status.label.startsWith('Aprovado com') && (
-                <div className="space-y-2">
-                  <p>Aprovado com nota mínima. Atenção aos pontos fracos:</p>
-                  <ul className="list-disc pl-5 text-sm">
-                    {weaknesses.map((s) => (
-                      <li key={s.label}>
-                        {s.label}: {s.nota.toFixed(1)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-muted-foreground">
-                    Recomenda-se plano de melhoria focado e revisão de procedimentos.
-                  </p>
+              <div>
+                <div className="font-medium">Resumo final</div>
+                <div className="grid md:grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Pontos fortes</div>
+                    <ul className="list-disc pl-5 text-sm">
+                      {strengthsAll.length ? (
+                        strengthsAll.map((s) => (
+                          <li key={s.label}>{s.label}: {s.nota.toFixed(1)}</li>
+                        ))
+                      ) : (
+                        <li>—</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Campos de melhoria</div>
+                    <ul className="list-disc pl-5 text-sm">
+                      {improvementsAll.length ? (
+                        improvementsAll.map((s) => (
+                          <li key={s.label}>{s.label}: {s.nota.toFixed(1)}</li>
+                        ))
+                      ) : (
+                        <li>—</li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
-              )}
-
-              {status.label === 'Reprovado' && (
-                <div className="space-y-2">
-                  <p>Reprovado por desempenho. Principais pontos a melhorar:</p>
-                  <ul className="list-disc pl-5 text-sm">
-                    {weaknesses.map((s) => (
-                      <li key={s.label}>
-                        {s.label}: {s.nota.toFixed(1)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-muted-foreground">
-                    Sugere-se refazer o treinamento após um plano de desenvolvimento direcionado.
-                  </p>
-                </div>
-              )}
-
-              {status.label === 'Reprovado por frequência' && (
-                <div className="space-y-2">
-                  <p>
-                    Reprovado por frequência ({freqPercent}%). A frequência mínima exigida é 70%.
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Agende nova participação garantindo presença suficiente para avaliação completa.
-                  </p>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
