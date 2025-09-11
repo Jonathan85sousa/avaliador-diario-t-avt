@@ -199,11 +199,12 @@ const ShareReport = () => {
         key: k,
         label: CATEGORIA_LABEL[k],
         nota: average(d.pontuacoes[k]),
-      }));
-      const hasData = scores.some((s) => s.nota > 0);
-      if (!hasData) {
+      })).filter((s) => s.nota > 0); // Filtrar apenas pontuações válidas
+      
+      if (scores.length === 0) {
         return { day: d.data ?? `Dia ${d.dia}`, high: undefined as any, low: undefined as any };
       }
+      
       const high = scores.reduce((m, s) => (s.nota > m.nota ? s : m), scores[0]);
       const low = scores.reduce((m, s) => (s.nota < m.nota ? s : m), scores[0]);
       return { day: d.data ?? `Dia ${d.dia}`, high, low };
@@ -264,29 +265,52 @@ const ShareReport = () => {
     try {
       const root = getComputedStyle(document.documentElement);
       const bg = `hsl(${root.getPropertyValue('--background').trim()})`;
+      
+      // Capturar todas as variáveis CSS do tema
       const styleVars: Record<string, string> = {
-        '--background': root.getPropertyValue('--background').trim(),
-        '--foreground': root.getPropertyValue('--foreground').trim(),
-        '--primary': root.getPropertyValue('--primary').trim(),
-        '--card': root.getPropertyValue('--card').trim(),
-        '--card-foreground': root.getPropertyValue('--card-foreground').trim(),
-        '--muted': root.getPropertyValue('--muted').trim(),
-        '--muted-foreground': root.getPropertyValue('--muted-foreground').trim(),
-        '--accent': root.getPropertyValue('--accent').trim(),
-        '--destructive': root.getPropertyValue('--destructive').trim(),
-        '--border': root.getPropertyValue('--border').trim(),
+        '--background': `hsl(${root.getPropertyValue('--background').trim()})`,
+        '--foreground': `hsl(${root.getPropertyValue('--foreground').trim()})`,
+        '--primary': `hsl(${root.getPropertyValue('--primary').trim()})`,
+        '--primary-foreground': `hsl(${root.getPropertyValue('--primary-foreground').trim()})`,
+        '--card': `hsl(${root.getPropertyValue('--card').trim()})`,
+        '--card-foreground': `hsl(${root.getPropertyValue('--card-foreground').trim()})`,
+        '--muted': `hsl(${root.getPropertyValue('--muted').trim()})`,
+        '--muted-foreground': `hsl(${root.getPropertyValue('--muted-foreground').trim()})`,
+        '--accent': `hsl(${root.getPropertyValue('--accent').trim()})`,
+        '--accent-foreground': `hsl(${root.getPropertyValue('--accent-foreground').trim()})`,
+        '--destructive': `hsl(${root.getPropertyValue('--destructive').trim()})`,
+        '--destructive-foreground': `hsl(${root.getPropertyValue('--destructive-foreground').trim()})`,
+        '--border': `hsl(${root.getPropertyValue('--border').trim()})`,
+        '--input': `hsl(${root.getPropertyValue('--input').trim()})`,
+        '--ring': `hsl(${root.getPropertyValue('--ring').trim()})`,
+        '--secondary': `hsl(${root.getPropertyValue('--secondary').trim()})`,
+        '--secondary-foreground': `hsl(${root.getPropertyValue('--secondary-foreground').trim()})`,
       };
+
       // Cria um wrapper temporário com as variáveis de tema aplicadas
       const wrapper = document.createElement('div');
+      wrapper.className = 'min-h-screen';
       Object.entries(styleVars).forEach(([k, v]) => wrapper.style.setProperty(k, v));
       wrapper.style.position = 'fixed';
       wrapper.style.left = '-10000px';
       wrapper.style.top = '0';
       wrapper.style.backgroundColor = bg;
+      wrapper.style.color = `hsl(${root.getPropertyValue('--foreground').trim()})`;
+      wrapper.style.fontFamily = getComputedStyle(document.body).fontFamily;
+      
       const clone = reportRef.current.cloneNode(true) as HTMLElement;
+      
+      // Adicionar logo se existir
+      if (state?.logoBase64) {
+        const logoContainer = document.createElement('div');
+        logoContainer.className = 'flex justify-center mb-6';
+        logoContainer.innerHTML = `<img src="${state.logoBase64}" alt="Logo" class="h-16 w-auto object-contain" />`;
+        clone.insertBefore(logoContainer, clone.firstChild);
+      }
+      
       wrapper.appendChild(clone);
-      // manter dimensões
       wrapper.style.width = `${reportRef.current.offsetWidth}px`;
+      wrapper.style.padding = '2rem';
       document.body.appendChild(wrapper);
 
       const dataUrl = await htmlToImage.toPng(wrapper, {
@@ -294,6 +318,8 @@ const ShareReport = () => {
         cacheBust: true,
         backgroundColor: bg,
         skipFonts: false,
+        includeQueryParams: true,
+        style: styleVars,
       });
 
       wrapper.remove();
@@ -302,8 +328,9 @@ const ShareReport = () => {
       a.download = `relatorio_${safeNome}.png`;
       a.href = dataUrl;
       a.click();
-      toast({ title: 'Relatório exportado', description: 'O PNG foi gerado com as cores.' });
+      toast({ title: 'Relatório exportado', description: 'O PNG foi gerado com cores e logo incluídos.' });
     } catch (e) {
+      console.error('Erro na exportação:', e);
       toast({ title: 'Falha ao exportar', description: 'Tente novamente.', variant: 'destructive' });
     }
   };
@@ -552,10 +579,19 @@ const ShareReport = () => {
                       return [value as number, _name];
                     }
                   }} />
-                  <Legend />
-                  <Bar dataKey="s1" name="Subtópico 1" fill={colors.primary} />
-                  <Bar dataKey="s2" name="Subtópico 2" fill={colors.primary} fillOpacity={0.8} />
-                  <Bar dataKey="s3" name="Subtópico 3" fill={colors.primary} fillOpacity={0.6} />
+                  <Legend formatter={(value: string, entry: any) => {
+                    try {
+                      const dataKey = value as 's1' | 's2' | 's3';
+                      const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
+                      const catKey = entry?.payload?.catKey as keyof Scores;
+                      return SUBTOPICOS[catKey]?.[idx] ?? value;
+                    } catch {
+                      return value;
+                    }
+                  }} />
+                  <Bar dataKey="s1" name="s1" fill={colors.primary} />
+                  <Bar dataKey="s2" name="s2" fill={colors.primary} fillOpacity={0.8} />
+                  <Bar dataKey="s3" name="s3" fill={colors.primary} fillOpacity={0.6} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
