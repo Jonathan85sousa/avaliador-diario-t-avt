@@ -45,6 +45,8 @@ type TrainingState = {
   totalHoras: number;
   startDate?: string; // ISO yyyy-MM-dd
   endDate?: string;   // ISO yyyy-MM-dd
+  nomesTreinadores?: string;
+  nomeEmpresa?: string;
   candidato: {
     nome: string;
     idade?: number;
@@ -230,17 +232,19 @@ const [newPartAge, setNewPartAge] = useState<string>("");
       if (tStr) {
         const t = JSON.parse(tStr);
         skipSaveRef.current = true;
-        setState(prev => ({
-          ...prev,
-          nomeTreinamento: t.nomeTreinamento ?? prev.nomeTreinamento,
-          local: t.local ?? prev.local,
-          dias: t.dias ?? prev.dias,
-          totalHoras: t.totalHoras ?? prev.totalHoras,
-          startDate: t.startDate ?? prev.startDate,
-          endDate: t.endDate ?? prev.endDate,
-          tema: t.tema ?? prev.tema,
-          logoBase64: t.logoBase64 ?? prev.logoBase64,
-        }));
+          setState(prev => ({
+            ...prev,
+            nomeTreinamento: t.nomeTreinamento ?? prev.nomeTreinamento,
+            local: t.local ?? prev.local,
+            dias: t.dias ?? prev.dias,
+            totalHoras: t.totalHoras ?? prev.totalHoras,
+            startDate: t.startDate ?? prev.startDate,
+            endDate: t.endDate ?? prev.endDate,
+            nomesTreinadores: t.nomesTreinadores ?? prev.nomesTreinadores,
+            nomeEmpresa: t.nomeEmpresa ?? prev.nomeEmpresa,
+            tema: t.tema ?? prev.tema,
+            logoBase64: t.logoBase64 ?? prev.logoBase64,
+          }));
       }
     } catch {}
     try {
@@ -275,10 +279,10 @@ const [newPartAge, setNewPartAge] = useState<string>("");
       return;
     }
     // Salvar apenas configurações do treinamento
-    const { nomeTreinamento, local, dias, totalHoras, startDate, endDate, tema, logoBase64 } = state;
-    const training = { nomeTreinamento, local, dias, totalHoras, startDate, endDate, tema, logoBase64 };
+    const { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, tema, logoBase64 } = state;
+    const training = { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, tema, logoBase64 };
     localStorage.setItem(TRAINING_KEY, JSON.stringify(training));
-  },[state.nomeTreinamento, state.local, state.dias, state.totalHoras, state.startDate, state.endDate, state.tema, state.logoBase64]);
+  },[state.nomeTreinamento, state.local, state.dias, state.totalHoras, state.startDate, state.endDate, state.nomesTreinadores, state.nomeEmpresa, state.tema, state.logoBase64]);
 
   useEffect(()=>{
     // Persistir lista de participantes
@@ -628,6 +632,14 @@ const subtopicChartData = useMemo(()=> {
                   <div>
                     <Label htmlFor="local">Local</Label>
                     <Input id="local" value={state.local} onChange={e=>setState(prev=>({...prev, local: e.target.value}))} placeholder="Ex.: Serra do Cipó" />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomesTreinadores">Nome dos treinadores</Label>
+                    <Input id="nomesTreinadores" value={state.nomesTreinadores || ''} onChange={e=>setState(prev=>({...prev, nomesTreinadores: e.target.value}))} placeholder="Ex.: João Silva, Maria Santos" />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomeEmpresa">Nome da empresa</Label>
+                    <Input id="nomeEmpresa" value={state.nomeEmpresa || ''} onChange={e=>setState(prev=>({...prev, nomeEmpresa: e.target.value}))} placeholder="Ex.: Adventure Training Co." />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
