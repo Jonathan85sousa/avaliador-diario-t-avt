@@ -1061,35 +1061,6 @@ const subtopicChartData = useMemo(()=> {
                    </ResponsiveContainer>
                  </CardContent>
                </Card>
-               <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Subtópicos por competência (média)</CardTitle>
-                </CardHeader>
-                <CardContent style={{height: 360}}>
-                  <ResponsiveContainer key={activeTab} width="100%" height="100%">
-                    <BarChart data={subtopicChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="categoria" />
-                      <YAxis domain={[0,10]} />
-                      <Tooltip formatter={(value: any, _name: any, props: any) => {
-                        try {
-                          const dataKey = props.dataKey as 's1' | 's2' | 's3';
-                          const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
-                          const catKey = props?.payload?.catKey as keyof Scores;
-                          const label = SUBTOPICOS[catKey]?.[idx] ?? _name;
-                          return [value as number, label];
-                        } catch {
-                          return [value as number, _name];
-                        }
-                      }} />
-                      <Legend />
-                      <Bar dataKey="s1" name="Subtópico 1" fill="hsl(var(--primary))" />
-                      <Bar dataKey="s2" name="Subtópico 2" fill="hsl(var(--primary))" fillOpacity={0.8} />
-                      <Bar dataKey="s3" name="Subtópico 3" fill="hsl(var(--primary))" fillOpacity={0.6} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
             </section>
 
             <div className="mt-4 flex justify-end gap-2">

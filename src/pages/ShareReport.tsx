@@ -557,45 +557,6 @@ const ShareReport = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Subtópicos por competência (média)</CardTitle>
-            </CardHeader>
-            <CardContent style={{ height: 360 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subtopicChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="categoria" />
-                  <YAxis domain={[0, 10]} />
-                  <Tooltip formatter={(value: any, _name: any, props: any) => {
-                    try {
-                      const dataKey = props.dataKey as 's1' | 's2' | 's3';
-                      const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
-                      const catKey = props?.payload?.catKey as keyof Scores;
-                      const label = SUBTOPICOS[catKey]?.[idx] ?? _name;
-                      return [value as number, label];
-                    } catch {
-                      return [value as number, _name];
-                    }
-                  }} />
-                  <Legend formatter={(value: string, entry: any) => {
-                    try {
-                      const dataKey = value as 's1' | 's2' | 's3';
-                      const idx = dataKey === 's1' ? 0 : dataKey === 's2' ? 1 : 2;
-                      const catKey = entry?.payload?.catKey as keyof Scores;
-                      return SUBTOPICOS[catKey]?.[idx] ?? value;
-                    } catch {
-                      return value;
-                    }
-                  }} />
-                  <Bar dataKey="s1" name="s1" fill={colors.primary} />
-                  <Bar dataKey="s2" name="s2" fill={colors.primary} fillOpacity={0.8} />
-                  <Bar dataKey="s3" name="s3" fill={colors.primary} fillOpacity={0.6} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
         </section>
 
         <div className="mt-4 flex justify-end">
