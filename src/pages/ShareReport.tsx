@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from '@/hooks/use-toast';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, BarChart, Bar } from 'recharts';
 
 // Tipos
@@ -259,6 +261,54 @@ const ShareReport = () => {
     if (overallAverage < 7) return { label: 'Reprovado', color: 'destructive' as const };
     return { label: 'Em avaliação', color: 'muted' as const };
   }, [overallAverage, freqPercent, state?.dias, allDaysCompleted]);
+
+  const onExportPDF = async () => {
+    if (!reportRef.current) return;
+    try {
+      toast({ title: 'Gerando PDF...', description: 'Por favor aguarde.' });
+      
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background') 
+          ? `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--background').trim()})`
+          : '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      // Adicionar logo se existir
+      if (state?.logoBase64) {
+        const logoHeight = 15;
+        pdf.addImage(state.logoBase64, 'PNG', pdfWidth / 2 - 20, 5, 40, logoHeight);
+      }
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY + (state?.logoBase64 ? 20 : 0), imgWidth * ratio, imgHeight * ratio);
+
+      const safeNome = (state?.candidato?.nome || 'candidato').replace(/\s+/g, '_');
+      pdf.save(`relatorio_${safeNome}.pdf`);
+      
+      toast({ title: 'PDF exportado com sucesso!', description: 'O relatório foi gerado.' });
+    } catch (e) {
+      console.error('Erro na exportação PDF:', e);
+      toast({ title: 'Falha ao exportar PDF', description: 'Tente novamente.', variant: 'destructive' });
+    }
+  };
 
   const onExport = async () => {
     if (!reportRef.current) return;
@@ -559,9 +609,12 @@ const ShareReport = () => {
           </Card>
         </section>
 
-        <div className="mt-4 flex justify-end">
-          <Button onClick={onExport}>
-            <Download className="mr-2 h-4 w-4" /> Exportar relatório (PNG)
+        <div className="mt-4 flex justify-end gap-3">
+          <Button onClick={onExportPDF} variant="default">
+            <FileText className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button onClick={onExport} variant="outline">
+            <Download className="mr-2 h-4 w-4" /> Exportar PNG
           </Button>
         </div>
       </main>
