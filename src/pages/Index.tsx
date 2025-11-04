@@ -480,15 +480,36 @@ const subtopicChartData = useMemo(()=> {
       const imgHeight = canvas.height;
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10;
+      let imgY = 10;
 
-      // Adicionar logo se existir
+      // Adicionar logo se existir, mantendo proporção correta
       if (state.logoBase64) {
-        const logoHeight = 15;
-        pdf.addImage(state.logoBase64, 'PNG', pdfWidth / 2 - 20, 5, 40, logoHeight);
+        // Criar imagem temporária para obter dimensões reais
+        const img = new Image();
+        img.src = state.logoBase64;
+        await new Promise((resolve) => { img.onload = resolve; });
+        
+        const logoMaxWidth = 40; // largura máxima em mm
+        const logoMaxHeight = 20; // altura máxima em mm
+        const logoRatio = img.width / img.height;
+        
+        let logoWidth = logoMaxWidth;
+        let logoHeight = logoMaxWidth / logoRatio;
+        
+        // Se a altura exceder o máximo, ajustar pela altura
+        if (logoHeight > logoMaxHeight) {
+          logoHeight = logoMaxHeight;
+          logoWidth = logoMaxHeight * logoRatio;
+        }
+        
+        const logoX = (pdfWidth - logoWidth) / 2;
+        pdf.addImage(state.logoBase64, 'PNG', logoX, 5, logoWidth, logoHeight);
+        
+        // Ajustar posição Y do conteúdo com base na altura da logo
+        imgY = 5 + logoHeight + 5;
       }
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY + (state.logoBase64 ? 20 : 0), imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
 
       const safeNome = (state.candidato.nome || 'candidato').replace(/\s+/g, '_');
       pdf.save(`relatorio_${safeNome}.pdf`);
@@ -959,6 +980,18 @@ const subtopicChartData = useMemo(()=> {
                     <div className="text-sm text-muted-foreground">Candidato</div>
                     <div className="font-semibold">{state.candidato.nome || '—'}{state.candidato.idade ? `, ${state.candidato.idade} anos` : ''}</div>
                   </div>
+                  {state.nomesTreinadores && (
+                    <div>
+                      <div className="text-sm text-muted-foreground">Treinadores</div>
+                      <div className="font-semibold">{state.nomesTreinadores}</div>
+                    </div>
+                  )}
+                  {state.nomeEmpresa && (
+                    <div>
+                      <div className="text-sm text-muted-foreground">Empresa</div>
+                      <div className="font-semibold">{state.nomeEmpresa}</div>
+                    </div>
+                  )}
                   {state.candidato.fotoBase64 && (
                     <div className="flex items-start gap-3 md:col-start-3 md:row-start-1 md:row-span-2 justify-self-end">
                       <img
