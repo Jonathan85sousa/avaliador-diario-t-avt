@@ -731,7 +731,7 @@ const subtopicChartData = useMemo(()=> {
                   </div>
                   <div>
                     <Label htmlFor="nomeEmpresa">Nome da empresa</Label>
-                    <Input id="nomeEmpresa" value={state.nomeEmpresa || ''} onChange={e=>setState(prev=>({...prev, nomeEmpresa: e.target.value}))} placeholder="Ex.: Adventure Training Co." />
+                    <Input id="nomeEmpresa" value={state.nomeEmpresa || ''} onChange={e=>setState(prev=>({...prev, nomeEmpresa: e.target.value}))} placeholder="Ex: MSV aventura." />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
