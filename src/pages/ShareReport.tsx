@@ -271,57 +271,69 @@ const ShareReport = () => {
       
       const element = reportRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 4,
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background') 
-          ? `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--background').trim()})`
-          : '#ffffff'
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: false
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      let imgY = 10;
+      
+      const margin = 10;
+      const availableWidth = pdfWidth - (2 * margin);
+      const ratio = availableWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+      
+      let currentY = margin;
 
       // Adicionar logo se existir, mantendo proporção correta
       if (state?.logoBase64) {
-        // Criar imagem temporária para obter dimensões reais
-        const img = new Image();
-        img.src = state.logoBase64;
-        await new Promise((resolve) => { img.onload = resolve; });
-        
-        const logoMaxWidth = 40; // largura máxima em mm
-        const logoMaxHeight = 20; // altura máxima em mm
-        const logoRatio = img.width / img.height;
-        
-        let logoWidth = logoMaxWidth;
-        let logoHeight = logoMaxWidth / logoRatio;
-        
-        // Se a altura exceder o máximo, ajustar pela altura
-        if (logoHeight > logoMaxHeight) {
-          logoHeight = logoMaxHeight;
-          logoWidth = logoMaxHeight * logoRatio;
+        try {
+          const img = new Image();
+          img.src = state.logoBase64;
+          await new Promise((resolve, reject) => { 
+            img.onload = resolve;
+            img.onerror = reject;
+            setTimeout(reject, 5000);
+          });
+          
+          const logoMaxWidth = 50;
+          const logoMaxHeight = 30;
+          const logoRatio = img.width / img.height;
+          
+          let logoWidth = logoMaxWidth;
+          let logoHeight = logoMaxWidth / logoRatio;
+          
+          if (logoHeight > logoMaxHeight) {
+            logoHeight = logoMaxHeight;
+            logoWidth = logoMaxHeight * logoRatio;
+          }
+          
+          const logoX = (pdfWidth - logoWidth) / 2;
+          pdf.addImage(state.logoBase64, 'PNG', logoX, currentY, logoWidth, logoHeight);
+          currentY += logoHeight + 10;
+        } catch (logoError) {
+          console.warn('Erro ao adicionar logo:', logoError);
         }
-        
-        const logoX = (pdfWidth - logoWidth) / 2;
-        pdf.addImage(state.logoBase64, 'PNG', logoX, 5, logoWidth, logoHeight);
-        
-        // Ajustar posição Y do conteúdo com base na altura da logo
-        imgY = 5 + logoHeight + 5;
       }
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'JPEG', margin, currentY, availableWidth, scaledHeight);
 
       const safeNome = (state?.candidato?.nome || 'candidato').replace(/\s+/g, '_');
       pdf.save(`relatorio_${safeNome}.pdf`);

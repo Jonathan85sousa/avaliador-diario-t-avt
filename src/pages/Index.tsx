@@ -459,28 +459,36 @@ const subtopicChartData = useMemo(()=> {
       
       const element = reportRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 4,
         useCORS: true,
         allowTaint: true,
-        logging: true,
-        backgroundColor: '#ffffff'
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
+        unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: false
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
       
-      let currentY = 10;
+      const margin = 10;
+      const availableWidth = pdfWidth - (2 * margin);
+      const ratio = availableWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+      
+      let currentY = margin;
 
       // Adicionar logo se existir, mantendo proporção correta
       if (state.logoBase64) {
@@ -493,8 +501,8 @@ const subtopicChartData = useMemo(()=> {
             setTimeout(reject, 5000);
           });
           
-          const logoMaxWidth = 100;
-          const logoMaxHeight = 60;
+          const logoMaxWidth = 50;
+          const logoMaxHeight = 30;
           const logoRatio = img.width / img.height;
           
           let logoWidth = logoMaxWidth;
@@ -510,12 +518,10 @@ const subtopicChartData = useMemo(()=> {
           currentY += logoHeight + 10;
         } catch (logoError) {
           console.warn('Erro ao adicionar logo:', logoError);
-          currentY = 10;
         }
       }
 
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      pdf.addImage(imgData, 'PNG', imgX, currentY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'JPEG', margin, currentY, availableWidth, scaledHeight);
 
       const safeNome = (state.candidato.nome || 'candidato').replace(/\s+/g, '_');
       pdf.save(`relatorio_${safeNome}.pdf`);
