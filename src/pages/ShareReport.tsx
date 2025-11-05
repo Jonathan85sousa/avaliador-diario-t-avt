@@ -465,7 +465,7 @@ const ShareReport = () => {
               </div>
               {state.nomesTreinadores && (
                 <div>
-                  <div className="text-sm text-muted-foreground">Treinadores</div>
+                  <div className="text-sm text-muted-foreground">Instrutores</div>
                   <div className="font-semibold">{state.nomesTreinadores}</div>
                 </div>
               )}

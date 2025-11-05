@@ -726,7 +726,7 @@ const subtopicChartData = useMemo(()=> {
                     <Input id="local" value={state.local} onChange={e=>setState(prev=>({...prev, local: e.target.value}))} placeholder="Ex.: Serra do Cipó" />
                   </div>
                   <div>
-                    <Label htmlFor="nomesTreinadores">Nome dos treinadores</Label>
+                    <Label htmlFor="nomesTreinadores">Nome dos instrutores</Label>
                     <Input id="nomesTreinadores" value={state.nomesTreinadores || ''} onChange={e=>setState(prev=>({...prev, nomesTreinadores: e.target.value}))} placeholder="Ex.: João Silva, Maria Santos" />
                   </div>
                   <div>
@@ -1003,7 +1003,7 @@ const subtopicChartData = useMemo(()=> {
                   </div>
                   {state.nomesTreinadores && (
                     <div>
-                      <div className="text-sm text-muted-foreground">Treinadores</div>
+                      <div className="text-sm text-muted-foreground">Instrutores</div>
                       <div className="font-semibold">{state.nomesTreinadores}</div>
                     </div>
                   )}

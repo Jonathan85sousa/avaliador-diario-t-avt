@@ -274,9 +274,9 @@ const Documentation = () => {
                 <h3 className="font-semibold text-lg mb-2">Informações Adicionais</h3>
                 <div className="space-y-3">
                   <div>
-                    <strong>Treinadores:</strong>
+                    <strong>Instrutores:</strong>
                     <p className="text-sm text-gray-600">
-                      Informe os nomes dos treinadores responsáveis, separados por vírgula 
+                      Informe os nomes dos instrutores responsáveis, separados por vírgula 
                       (ex: "João Silva, Maria Santos")
                     </p>
                   </div>
@@ -454,7 +454,7 @@ const Documentation = () => {
                     <strong>Resumo</strong>
                     <p className="text-sm text-gray-600">
                       Informações gerais: nome do treinamento, local, período, candidato, 
-                      treinadores e empresa.
+                      instrutores e empresa.
                     </p>
                   </div>
                   
