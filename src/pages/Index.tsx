@@ -690,6 +690,15 @@ const subtopicChartData = useMemo(()=> {
             <img src={state.logoBase64} alt="Logo da empresa" loading="lazy" className="h-12 w-12 rounded-md object-cover shadow" />
           ) : null}
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Avaliador de Treinamento de Aventura</h1>
+          <Button 
+            onClick={() => window.open('/documentacao', '_blank')} 
+            variant="outline" 
+            size="sm"
+            className="mt-4"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Manual de Uso
+          </Button>
         </div>
       </header>
 
