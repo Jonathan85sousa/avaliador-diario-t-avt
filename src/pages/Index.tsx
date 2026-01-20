@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Download, ImagePlus, Palette, Link2, FileText } from "lucide-react";
+import { Download, ImagePlus, Link2, FileText, Trash2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, BarChart, Bar } from "recharts";
 import * as htmlToImage from "html-to-image";
 import html2canvas from 'html2canvas';
@@ -56,11 +56,6 @@ type TrainingState = {
   };
   logoBase64?: string;
   avaliacoes: DayEval[];
-  tema?: {
-    background?: string; // HSL string "h s% l%"
-    foreground?: string;
-    primary?: string;
-  };
 };
 
 const STORAGE_KEY = "adventure-training-eval-v1";
@@ -109,37 +104,6 @@ const SUBTOPICOS: Record<keyof Scores, [string, string, string]> = {
 
 const getCategoryAverage = (p: ScoresDetail, cat: keyof Scores) => average(p[cat]);
 
-function hexToHslString(hex: string): string | undefined {
-  // Remove '#'
-  const c = hex.replace('#','');
-  if (![3,6].includes(c.length)) return undefined;
-  const bigint = parseInt(c.length===3 ? c.split('').map(ch=>ch+ch).join('') : c, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  const r1 = r/255, g1 = g/255, b1 = b/255;
-  const max = Math.max(r1,g1,b1), min = Math.min(r1,g1,b1);
-  let h = 0, s = 0, l = (max+min)/2;
-  if (max !== min) {
-    const d = max-min;
-    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-    switch(max){
-      case r1: h = (g1-b1)/d + (g1 < b1 ? 6 : 0); break;
-      case g1: h = (b1-r1)/d + 2; break;
-      case b1: h = (r1-g1)/d + 4; break;
-    }
-    h /= 6;
-  }
-  const H = Math.round(h*360);
-  const S = Math.round(s*100);
-  const L = Math.round(l*100);
-  return `${H} ${S}% ${L}%`;
-}
-
-function setCssVar(name: string, value: string | undefined) {
-  if (!value) return;
-  document.documentElement.style.setProperty(name, value);
-}
 
 function average(values: number[]): number {
   if (!values.length) return 0;
@@ -244,7 +208,7 @@ const [newPartAge, setNewPartAge] = useState<string>("");
             endDate: t.endDate ?? prev.endDate,
             nomesTreinadores: t.nomesTreinadores ?? prev.nomesTreinadores,
             nomeEmpresa: t.nomeEmpresa ?? prev.nomeEmpresa,
-            tema: t.tema ?? prev.tema,
+            
             logoBase64: t.logoBase64 ?? prev.logoBase64,
           }));
       }
@@ -281,10 +245,10 @@ const [newPartAge, setNewPartAge] = useState<string>("");
       return;
     }
     // Salvar apenas configurações do treinamento
-    const { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, tema, logoBase64 } = state;
-    const training = { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, tema, logoBase64 };
+    const { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, logoBase64 } = state;
+    const training = { nomeTreinamento, local, dias, totalHoras, startDate, endDate, nomesTreinadores, nomeEmpresa, logoBase64 };
     localStorage.setItem(TRAINING_KEY, JSON.stringify(training));
-  },[state.nomeTreinamento, state.local, state.dias, state.totalHoras, state.startDate, state.endDate, state.nomesTreinadores, state.nomeEmpresa, state.tema, state.logoBase64]);
+  },[state.nomeTreinamento, state.local, state.dias, state.totalHoras, state.startDate, state.endDate, state.nomesTreinadores, state.nomeEmpresa, state.logoBase64]);
 
   useEffect(()=>{
     // Persistir lista de participantes
@@ -303,14 +267,6 @@ const [newPartAge, setNewPartAge] = useState<string>("");
     localStorage.setItem(EVAL_KEY_PREFIX + currentParticipantId, JSON.stringify(payload));
   },[state.avaliacoes, currentParticipantId]);
 
-  // Aplicar tema salvo
-  useEffect(()=>{
-    if (state.tema) {
-      setCssVar('--background', state.tema.background);
-      setCssVar('--foreground', state.tema.foreground);
-      setCssVar('--primary', state.tema.primary);
-    }
-  },[]);
 
   // Atualiza dias e total de horas
   const updateDias = (dias: number) => {
@@ -450,7 +406,7 @@ const subtopicChartData = useMemo(()=> {
   const colors = useMemo(() => {
     const root = getComputedStyle(document.documentElement);
     return { primary: `hsl(${root.getPropertyValue('--primary').trim()})` };
-  }, [state.tema]);
+  }, []);
 
   const onExportPDF = async () => {
     if (!reportRef.current) return;
@@ -574,7 +530,6 @@ const subtopicChartData = useMemo(()=> {
         candidato: state.candidato,
         logoBase64: state.logoBase64,
         avaliacoes: state.avaliacoes,
-        tema: state.tema,
       };
       const json = JSON.stringify(share);
       const base64 = btoa(unescape(encodeURIComponent(json)));
@@ -637,49 +592,9 @@ const subtopicChartData = useMemo(()=> {
     toast({ title: "Formulário resetado", description: "Dados limpos do navegador." });
   };
 
-  const ThemePicker = () => {
-    const [bgHex, setBgHex] = useState<string>("");
-    const [fgHex, setFgHex] = useState<string>("");
-    const [priHex, setPriHex] = useState<string>("");
-
-    const apply = () => {
-      const background = hexToHslString(bgHex);
-      const foreground = hexToHslString(fgHex);
-      const primary = hexToHslString(priHex);
-      setCssVar('--background', background);
-      setCssVar('--foreground', foreground);
-      setCssVar('--primary', primary);
-      setState(prev=> ({...prev, tema: { background, foreground, primary }}));
-      toast({ title: "Tema aplicado", description: "Cores atualizadas." });
-    };
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="bg">Cor de fundo</Label>
-          <div className="flex items-center gap-2 mt-2">
-            <Input id="bg" type="color" aria-label="Cor de fundo" value={bgHex} onChange={e=>setBgHex(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="fg">Cor da fonte</Label>
-          <div className="flex items-center gap-2 mt-2">
-            <Input id="fg" type="color" aria-label="Cor da fonte" value={fgHex} onChange={e=>setFgHex(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="pri">Cor primária (botões)</Label>
-          <div className="flex items-center gap-2 mt-2">
-            <Input id="pri" type="color" aria-label="Cor primária" value={priHex} onChange={e=>setPriHex(e.target.value)} />
-          </div>
-        </div>
-        <div className="sm:col-span-3 flex justify-end">
-          <Button onClick={apply} className="transition-[transform] duration-200 hover:scale-[1.02]">
-            <Palette className="mr-2 h-4 w-4" /> Aplicar tema
-          </Button>
-        </div>
-      </div>
-    );
+  const removerLogo = () => {
+    setState(prev => ({ ...prev, logoBase64: undefined }));
+    toast({ title: "Logo removida" });
   };
 
   return (
@@ -889,19 +804,26 @@ const subtopicChartData = useMemo(()=> {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2 shadow-[var(--shadow-soft)]">
+              <Card className="shadow-[var(--shadow-soft)]">
                 <CardHeader>
-                  <CardTitle className="flex items-center"><Palette className="mr-2 h-5 w-5"/> Personalizar Cores & Logo</CardTitle>
+                  <CardTitle className="flex items-center"><ImagePlus className="mr-2 h-5 w-5"/> Logo da Empresa</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ThemePicker />
-                  <div className="flex items-center gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Adicione a logo da sua empresa para aparecer no cabeçalho e nos relatórios exportados.
+                  </p>
+                  <div className="flex items-center gap-4">
                     <Button type="button" variant="secondary" onClick={()=>document.getElementById('logoEmp')?.click()}>
-                      <ImagePlus className="mr-2 h-4 w-4"/> Logo da empresa (opcional)
+                      <ImagePlus className="mr-2 h-4 w-4"/> Selecionar Logo
                     </Button>
                     <input id="logoEmp" type="file" accept="image/*" className="hidden" onChange={e=>{ const f=e.target.files?.[0]; if(f) onUploadImage(f,'logo'); }} />
                     {state.logoBase64 && (
-                      <img src={state.logoBase64} alt="Logo da empresa" loading="lazy" className="h-10 w-10 rounded-md object-cover" />
+                      <>
+                        <img src={state.logoBase64} alt="Logo" className="h-16 w-16 rounded-md object-contain border" />
+                        <Button variant="ghost" size="sm" onClick={removerLogo}>
+                          <Trash2 className="mr-2 h-4 w-4"/> Remover
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardContent>

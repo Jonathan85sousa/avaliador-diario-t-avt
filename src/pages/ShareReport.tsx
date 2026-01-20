@@ -55,10 +55,6 @@ function average(values: number[]): number {
   return Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2));
 }
 
-function setCssVar(name: string, value?: string) {
-  if (!value) return;
-  document.documentElement.style.setProperty(name, value);
-}
 
 function decodePayload(packed: string) {
   const pad = (s: string) => s + '='.repeat((4 - (s.length % 4)) % 4);
@@ -79,7 +75,7 @@ type TrainingState = {
   candidato: { nome: string; idade?: number; fotoBase64?: string };
   logoBase64?: string;
   avaliacoes: DayEval[];
-  tema?: { background?: string; foreground?: string; primary?: string };
+  
 };
 
 const ShareReport = () => {
@@ -123,14 +119,6 @@ const ShareReport = () => {
     link.setAttribute('href', window.location.href);
   }, [state]);
 
-  // Aplicar tema do relatório compartilhado
-  useEffect(() => {
-    if (state?.tema) {
-      setCssVar('--background', state.tema.background);
-      setCssVar('--foreground', state.tema.foreground);
-      setCssVar('--primary', state.tema.primary);
-    }
-  }, [state]);
 
   const colors = useMemo(() => {
     const root = getComputedStyle(document.documentElement);
@@ -138,7 +126,7 @@ const ShareReport = () => {
       primary: `hsl(${root.getPropertyValue('--primary').trim()})`,
       background: `hsl(${root.getPropertyValue('--background').trim()})`,
     };
-  }, [state?.tema]);
+  }, []);
 
   const presentCount = useMemo(
     () => state?.avaliacoes.filter((d) => d.presente).length ?? 0,
