@@ -132,7 +132,6 @@ const Documentation = () => {
                 <li className="font-semibold">Registro de Avaliações Diárias</li>
                 <li className="font-semibold">Visualização de Relatórios</li>
                 <li className="font-semibold">Exportação e Compartilhamento</li>
-                <li className="font-semibold">Personalização Visual</li>
                 <li className="font-semibold">Critérios de Avaliação</li>
                 <li className="font-semibold">Perguntas Frequentes</li>
               </ol>
@@ -166,7 +165,7 @@ const Documentation = () => {
                   <li>Gráficos automáticos de desempenho (linha, radar, barras)</li>
                   <li>Geração de relatórios completos em PDF e PNG</li>
                   <li>Compartilhamento de relatórios via link</li>
-                  <li>Personalização de cores e tema visual</li>
+                  <li>Upload de logo da empresa para relatórios</li>
                   <li>Cálculo automático de médias e status de aprovação</li>
                 </ul>
               </div>
@@ -569,40 +568,10 @@ const Documentation = () => {
             </CardContent>
           </Card>
 
-          {/* 8. Personalização Visual */}
+          {/* 8. Critérios de Avaliação */}
           <Card>
             <CardHeader>
-              <CardTitle>8. Personalização Visual</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Alterar Cores do Sistema</h3>
-                <ol className="list-decimal list-inside space-y-1 text-gray-700 ml-4">
-                  <li>Na aba "Cadastro", clique no ícone de paleta de cores</li>
-                  <li>Selecione as cores para:
-                    <ul className="list-disc list-inside ml-6 mt-1">
-                      <li><strong>Fundo:</strong> cor de fundo principal</li>
-                      <li><strong>Texto:</strong> cor do texto principal</li>
-                      <li><strong>Primária:</strong> cor de destaque (botões, títulos)</li>
-                    </ul>
-                  </li>
-                  <li>As cores serão aplicadas imediatamente</li>
-                  <li>As cores personalizadas serão mantidas nos relatórios exportados</li>
-                </ol>
-              </div>
-
-              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ Escolha cores com bom contraste entre fundo e texto para garantir legibilidade.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 9. Critérios de Avaliação */}
-          <Card>
-            <CardHeader>
-              <CardTitle>9. Critérios de Avaliação e Aprovação</CardTitle>
+              <CardTitle>8. Critérios de Avaliação e Aprovação</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -656,10 +625,10 @@ const Documentation = () => {
             </CardContent>
           </Card>
 
-          {/* 10. Perguntas Frequentes */}
+          {/* 9. Perguntas Frequentes */}
           <Card>
             <CardHeader>
-              <CardTitle>10. Perguntas Frequentes (FAQ)</CardTitle>
+              <CardTitle>9. Perguntas Frequentes (FAQ)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
